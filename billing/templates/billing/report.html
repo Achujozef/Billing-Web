@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+
+  <h3 class="fw-bold text-secondary mb-4">📊 Sales Report</h3>
+
+<!-- Filter Buttons + Styled Date Inputs -->
+<form method="get" class="d-flex flex-wrap gap-2 align-items-center mb-3">
+  <input type="hidden" name="filter" value="custom">
+
+  <a href="?filter=today" class="btn btn-outline-dark {% if filter_option == 'today' %}active{% endif %}">Today</a>
+  <a href="?filter=week" class="btn btn-outline-dark {% if filter_option == 'week' %}active{% endif %}">This Week</a>
+  <a href="?filter=month" class="btn btn-outline-dark {% if filter_option == 'month' %}active{% endif %}">This Month</a>
+  <a href="?filter=year" class="btn btn-outline-dark {% if filter_option == 'year' %}active{% endif %}">This Year</a>
+
+  <!-- Styled Date Inputs -->
+  <input type="date" name="start_date" class="btn btn-outline-dark btn-sm date-btn" value="{{ start_date }}">
+  <input type="date" name="end_date" class="btn btn-outline-dark btn-sm date-btn" value="{{ end_date }}">
+  <button class="btn btn-dark btn-sm">Filter</button>
+</form>
+
+  <!-- Summary Badges -->
+  <div class="mb-3">
+    <span class="badge bg-success me-2">Total Bills: {{ total_bills }}</span>
+    <span class="badge bg-info">Total Amount: ₹{{ total_amount }}</span>
+  </div>
+
+  <!-- Bill Table -->
+  <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
+    <table class="table table-hover mb-0">
+      <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+        <tr>
+          <th>ID</th>
+          <th>Customer</th>
+          <th>Nakshathra</th>
+          <th>Date</th>
+          <th>Total Amount</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bill in bills %}
+        <tr>
+          <td>{{ bill.id }}</td>
+          <td>{{ bill.customer_name }}</td>
+          <td>{{ bill.nakshathra }}</td>
+          <td>{{ bill.date }}</td>
+          <td>₹{{ bill.total_amount }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary viewBillBtn" 
+                    data-id="{{ bill.id }}" 
+                    data-customer="{{ bill.customer_name }}"
+                    data-nakshathra="{{ bill.nakshathra }}"
+                    data-date="{{ bill.date }}"
+                    data-amount="{{ bill.total_amount }}"
+                    data-poojas='{% for p in bill.poojas.all %}{{ p.pooja_name }} (₹{{ p.price }}){% if not forloop.last %}, {% endif %}{% endfor %}'>
+              View
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">No bills found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Previous</span></li>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+</div>
+
+<!-- Bill Detail Modal -->
+<div class="modal fade" id="billDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content rounded-4 shadow-lg">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title fw-bold" id="billModalLabel">Bill Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Customer:</strong> <span id="modalCustomer"></span></p>
+        <p><strong>Nakshathra:</strong> <span id="modalNakshathra"></span></p>
+        <p><strong>Date:</strong> <span id="modalDate"></span></p>
+        <p><strong>Total Amount:</strong> ₹<span id="modalAmount"></span></p>
+        <p><strong>Poojas:</strong> <span id="modalPoojas"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-dark" onclick="window.print()">Print</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+/* Make date inputs look like buttons */
+input[type="date"].date-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  height: 32px;
+  display: inline-block;
+  border: 1px solid #343a40;
+  border-radius: 0.25rem;
+  background-color: #fff;
+  color: #343a40;
+}
+
+input[type="date"].date-btn::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.5); /* optional: make icon visible on dark buttons */
+}
+
+input[type="date"].date-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(52, 58, 64, 0.25);
+}
+</style>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const billModal = new bootstrap.Modal(document.getElementById("billDetailModal"));
+
+  document.querySelectorAll(".viewBillBtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.getElementById("modalCustomer").innerText = btn.dataset.customer;
+      document.getElementById("modalNakshathra").innerText = btn.dataset.nakshathra;
+      document.getElementById("modalDate").innerText = btn.dataset.date;
+      document.getElementById("modalAmount").innerText = btn.dataset.amount;
+      document.getElementById("modalPoojas").innerText = btn.dataset.poojas;
+      billModal.show();
+    });
+  });
+});
+</script>
+{% endblock %}

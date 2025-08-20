@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+.Python
+
+# Django
+*.log
+*.pot
+*.pyc
+*.sqlite3
+db.sqlite3
+local_settings.py
+*.cover
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+celerybeat-schedule
+
+# Django migrations
+**/migrations/
+!**/migrations/__init__.py
+
+# Static and media files
+/staticfiles/
+media/
+static/
+static_root/
+media_root/
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env files
+.env
+.env.*
