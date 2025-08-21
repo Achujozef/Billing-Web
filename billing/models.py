@@ -103,3 +103,16 @@ class BillPooja(models.Model):
 
     def __str__(self):
         return f"Bill {self.bill.id} → {self.pooja.pooja_name}"
+
+class SubscriptionCycleHistory(models.Model):
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE, related_name="cycle_histories")
+    cycle_number = models.PositiveIntegerField()
+    poojas_done = models.ManyToManyField(Pooja, blank=True)
+    done_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('subscription', 'cycle_number')
+        ordering = ['cycle_number']
+
+    def __str__(self):
+        return f"{self.subscription.customer.name} - Cycle {self.cycle_number} ({self.done_at.strftime('%Y-%m-%d %H:%M')})"

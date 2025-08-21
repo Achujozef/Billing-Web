@@ -7,15 +7,28 @@
     <button class="btn btn-dark" id="addSubBtn">+ Add Subscription</button>
   </div>
 
-  <!-- Nakshathra Filter -->
-  <div class="mb-3 d-flex gap-2 align-items-center">
-    <label class="fw-medium">Filter by Nakshathra:</label>
-    <select id="nakshathra-filter" class="form-select w-auto">
-      <option value="">All</option>
-      {% for nk, val in nakshathras.items %}
-      <option value="{{ nk }}" {% if selected_nakshathra == nk %}selected{% endif %}>{{ val }}</option>
-      {% endfor %}
-    </select>
+  <!-- Filters -->
+  <div class="row mb-3 align-items-end">
+    <div class="col-md-4">
+      <label class="fw-medium">Filter by Nakshathra:</label>
+      <select id="nakshathra-filter" class="form-select">
+        <option value="">All Nakshathras</option>
+        {% for nk, val in nakshathras.items %}
+        <option value="{{ nk }}" {% if selected_nakshathra == nk %}selected{% endif %}>{{ val }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="fw-medium">Filter by Status:</label>
+      <select id="status-filter" class="form-select">
+        <option value="">All Status</option>
+        <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+        <option value="Inactive" {% if selected_status == 'Inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+    </div>
+    <div class="col-md-4">
+      <button class="btn btn-outline-secondary" onclick="clearFilters()">Clear Filters</button>
+    </div>
   </div>
 
   <!-- Subscription Table -->
@@ -24,9 +37,12 @@
       <thead class="table-light" style="position:sticky; top:0; z-index:1;">
         <tr>
           <th>Customer</th>
+          <th>Phone</th>
           <th>Nakshathra</th>
           <th>Start Date</th>
           <th>End Date</th>
+          <th>Days</th>
+          <th>Total Amount</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -35,17 +51,33 @@
         {% for sub in subscriptions %}
         <tr>
           <td>{{ sub.customer.name }}</td>
+          <td>{{ sub.customer.phone_number|default:"-" }}</td>
           <td>{{ sub.nakshathra }}</td>
           <td>{{ sub.start_date }}</td>
           <td>{{ sub.end_date }}</td>
+          <td>{{ sub.total_days }}</td>
+          <td class="fw-bold text-success">₹{{ sub.total_bill_amount|floatformat:0 }}</td>
           <td>
             <div class="form-check form-switch">
               <input class="form-check-input toggleStatus" type="checkbox" data-id="{{ sub.id }}" {% if sub.status == 'Active' %}checked{% endif %}>
               <label class="form-check-label text-muted">{{ sub.status }}</label>
             </div>
           </td>
-          <td class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-dark editSubBtn" data-id="{{ sub.id }}">Edit</button>
+          <td>
+        <div class="btn-group" role="group">
+          <button class="btn btn-sm btn-outline-primary viewSubBtn" data-id="{{ sub.id }}" title="View Bill">
+            View
+          </button>
+          <button class="btn btn-sm btn-outline-dark editSubBtn" data-id="{{ sub.id }}" title="Edit">
+            Edit
+          </button>
+          <button class="btn btn-sm btn-outline-danger deleteSubBtn" data-id="{{ sub.id }}" title="Delete">
+            Delete
+          </button>
+            <button class="btn btn-sm btn-outline-info historySubBtn" data-id="{{ sub.id }}" title="History">
+            History
+          </button>
+        </div>
           </td>
         </tr>
         {% endfor %}
@@ -55,7 +87,7 @@
 
 </div>
 
-<!-- Modal -->
+<!-- Subscription Form Modal -->
 <div class="modal fade" id="subModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content rounded-4 shadow-lg" style="background:#fafafa;">
@@ -92,13 +124,16 @@
           </div>
           <div class="mb-3">
             <label class="form-label fw-medium">Select Poojas</label>
-            <div class="form-check">
+            <div class="form-check" style="max-height: 200px; overflow-y: auto;">
               {% for p in poojas %}
                 <div class="mb-1">
-                  <input class="form-check-input" type="checkbox" name="poojas" value="{{ p.id }}" id="pooja{{ p.id }}">
+                  <input class="form-check-input pooja-checkbox" type="checkbox" name="poojas" value="{{ p.id }}" data-price="{{ p.price }}" id="pooja{{ p.id }}">
                   <label class="form-check-label" for="pooja{{ p.id }}">{{ p.pooja_name }} - ₹{{ p.price }}</label>
                 </div>
               {% endfor %}
+            </div>
+            <div class="mt-2">
+              <small class="text-muted">Total Pooja Amount: ₹<span id="totalPoojaAmount">0</span></small>
             </div>
           </div>
         </form>
@@ -106,6 +141,47 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button class="btn btn-dark" id="saveSubBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bill View/Print Modal -->
+<div class="modal fade" id="billModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content rounded-4 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title fw-bold">📄 Subscription Bill</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="billContent">
+        <!-- Bill content will be populated here -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-primary" onclick="printBill()">
+          <i class="fas fa-print"></i> Print Bill
+        </button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 shadow-lg">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title fw-bold">⚠️ Delete Subscription</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <p class="mb-3">Are you sure you want to delete this subscription?</p>
+        <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
       </div>
     </div>
   </div>
@@ -122,8 +198,7 @@ label {
 
 /* Table */
 .table-hover tbody tr:hover {
-  {% comment %} background-color: #f5f5f5; {% endcomment %}
-  background-color: #2c1f14 !important;
+  background-color: #f8f9fa !important;
 }
 .table-light {
   background: #f8f9fa !important;
@@ -143,24 +218,93 @@ label {
   color: #fff;
 }
 
+.btn-group .btn {
+  margin: 0 1px;
+}
+
 /* Modal */
 .modal-content {
   border-radius: 16px !important;
 }
 
+/* Bill Styles */
+.bill-header {
+  text-align: center;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.bill-details {
+  margin-bottom: 20px;
+}
+
+.bill-table {
+  margin-bottom: 20px;
+}
+
+.bill-total {
+  text-align: right;
+  border-top: 2px solid #dee2e6;
+  padding-top: 15px;
+}
+
+@media print {
+  .modal-header, .modal-footer {
+    display: none !important;
+  }
+  .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .modal-body {
+    padding: 0 !important;
+  }
+}
 </style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
     let subModal = new bootstrap.Modal(document.getElementById("subModal"));
+    let billModal = new bootstrap.Modal(document.getElementById("billModal"));
+    let deleteModal = new bootstrap.Modal(document.getElementById("deleteModal"));
     let saveBtn = document.getElementById("saveSubBtn");
     let subscriptions = {{ subscriptions_json|safe }};
+    let poojas = {{ poojas_json|safe }};
+    let currentDeleteId = null;
 
-    // Filter by Nakshathra
-    document.getElementById("nakshathra-filter").addEventListener("change", function(){
-        let val = this.value;
-        let query = val ? "?nakshathra=" + encodeURIComponent(val) : "";
+    // Filter handlers
+    document.getElementById("nakshathra-filter").addEventListener("change", applyFilters);
+    document.getElementById("status-filter").addEventListener("change", applyFilters);
+
+    function applyFilters() {
+        const nakshathra = document.getElementById("nakshathra-filter").value;
+        const status = document.getElementById("status-filter").value;
+        
+        let query = "";
+        const params = [];
+        if (nakshathra) params.push("nakshathra=" + encodeURIComponent(nakshathra));
+        if (status) params.push("status=" + encodeURIComponent(status));
+        if (params.length) query = "?" + params.join("&");
+        
         window.location.href = "{% url 'subscription_list' %}" + query;
+    }
+
+    window.clearFilters = function() {
+        window.location.href = "{% url 'subscription_list' %}";
+    }
+
+    // Calculate total pooja amount
+    function updateTotalPoojaAmount() {
+        let total = 0;
+        document.querySelectorAll(".pooja-checkbox:checked").forEach(cb => {
+            total += parseFloat(cb.dataset.price || 0);
+        });
+        document.getElementById("totalPoojaAmount").textContent = total.toFixed(0);
+    }
+
+    document.querySelectorAll(".pooja-checkbox").forEach(cb => {
+        cb.addEventListener("change", updateTotalPoojaAmount);
     });
 
     // Toggle subscription status
@@ -190,6 +334,14 @@ document.addEventListener("DOMContentLoaded", function(){
       subModal.show();
     });
 
+    // View subscription bill
+    document.querySelectorAll(".viewSubBtn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+            let id = parseInt(btn.dataset.id);
+            showBill(id, false);
+        });
+    });
+
     // Edit subscription
     document.querySelectorAll(".editSubBtn").forEach(btn=>{
       btn.addEventListener("click", ()=>{
@@ -208,12 +360,138 @@ document.addEventListener("DOMContentLoaded", function(){
         document.querySelectorAll("[name='poojas']").forEach(cb=>{
           cb.checked = sub.poojas.includes(parseInt(cb.value));
         });
+        updateTotalPoojaAmount();
 
         saveBtn.onclick = ()=>saveSub(id);
         subModal.show();
       });
     });
 
+    // Delete subscription
+    document.querySelectorAll(".deleteSubBtn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+            currentDeleteId = parseInt(btn.dataset.id);
+            deleteModal.show();
+        });
+    });
+
+    document.getElementById("confirmDeleteBtn").addEventListener("click", ()=>{
+        if(currentDeleteId) {
+            fetch("{% url 'delete_subscription' %}", {
+                method:"POST",
+                headers: {"Content-Type":"application/json","X-CSRFToken":"{{ csrf_token }}"},
+                body: JSON.stringify({id: currentDeleteId})
+            }).then(res=>res.json()).then(data=>{
+                if(data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+                deleteModal.hide();
+                currentDeleteId = null;
+            });
+        }
+    });
+
+    // Show bill function
+    window.showBill = function(id, isNewSubscription = false) {
+        const sub = subscriptions.find(s => s.id === id);
+        if (!sub) return;
+
+        const selectedPoojas = poojas.filter(p => sub.poojas.includes(p.id));
+        const totalPoojaAmount = selectedPoojas.reduce((sum, p) => sum + parseFloat(p.price), 0);
+        const totalDays = sub.total_days;
+        const cycles = Math.ceil(totalDays / 28);
+        const totalBillAmount = totalPoojaAmount * cycles;
+
+        const billContent = `
+            <div class="bill-header">
+                <h4 class="mb-1">🕉️ Temple Subscription Bill</h4>
+                <p class="text-muted mb-0">Sacred Pooja Services</p>
+            </div>
+            
+            <div class="bill-details">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Customer Name:</strong><br>
+                        <span class="text-primary fs-5">${sub.customer.name}</span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Phone:</strong><br>
+                        <span>${sub.customer.phone_number || 'Not provided'}</span>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <strong>Nakshathra:</strong><br>
+                        <span class="text-success">${sub.nakshathra}</span>
+                    </div>
+                    <div class="col-6">
+                        <strong>Duration:</strong><br>
+                        <span>${sub.start_date} to ${sub.end_date}</span><br>
+                        <small class="text-muted">(${totalDays} days)</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bill-table">
+                <h6 class="fw-bold mb-3">Selected Poojas:</h6>
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Pooja Name</th>
+                            <th>Price per Cycle</th>
+                            <th>Cycles</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${selectedPoojas.map(p => `
+                            <tr>
+                                <td>${p.pooja_name}</td>
+                                <td>₹${parseFloat(p.price).toFixed(0)}</td>
+                                <td>${cycles}</td>
+                                <td>₹${(parseFloat(p.price) * cycles).toFixed(0)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bill-total">
+                <div class="row">
+                    <div class="col-8">
+                        <p class="mb-1"><strong>Calculation:</strong></p>
+                        <small class="text-muted">
+                            Total Days: ${totalDays} ÷ 28 days per cycle = ${cycles} cycles<br>
+                            Total Pooja Amount: ₹${totalPoojaAmount.toFixed(0)} × ${cycles} cycles
+                        </small>
+                    </div>
+                    <div class="col-4 text-end">
+                        <h4 class="text-success mb-0">
+                            <strong>Total: ₹${totalBillAmount.toFixed(0)}</strong>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 pt-3 border-top">
+                <p class="text-muted mb-0">
+                    <small>🙏 Thank you for your devotion • Generated on ${new Date().toLocaleDateString()}</small>
+                </p>
+            </div>
+        `;
+
+        document.getElementById("billContent").innerHTML = billContent;
+        billModal.show();
+    };
+
+    // Print bill function
+    window.printBill = function() {
+        window.print();
+    };
+
+    // Save subscription with bill display
     window.saveSub = function(id=null){
       let form = document.getElementById("subForm");
       let data = Object.fromEntries(new FormData(form).entries());
@@ -225,19 +503,33 @@ document.addEventListener("DOMContentLoaded", function(){
         headers: {"Content-Type":"application/json","X-CSRFToken":"{{ csrf_token }}"},
         body: JSON.stringify(data)
       }).then(r=>r.json()).then(d=>{
-        if(d.success) location.reload(); 
-        else alert(d.error);
+        if(d.success) {
+            subModal.hide();
+            
+            // Show bill for new subscription
+            if(!id && d.subscription_id) {
+                // Reload to get the new subscription data, then show bill
+                setTimeout(() => {
+                    location.reload();
+                }, 100);
+            } else {
+                location.reload();
+            }
+        } else {
+            alert(d.error);
+        }
       });
     }
 
     function resetForm(){
       document.getElementById("subForm").reset();
       document.querySelectorAll("[name='poojas']").forEach(cb=>cb.checked=false);
+      updateTotalPoojaAmount();
     }
 });
 </script>
 
-
+<!-- Customer Name Malayalam suggestions script -->
 <script>
 document.addEventListener("DOMContentLoaded", function(){
 
@@ -390,6 +682,134 @@ document.addEventListener("DOMContentLoaded", function(){
 
 });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const historyModalHtml = `
+    <div class="modal fade" id="historyModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-white text-dark">
+          <div class="modal-header border-bottom">
+            <h5 class="modal-title">📜 Subscription Cycle History</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" style="max-height:500px; overflow-y:auto;">
+            <div id="cycleCards" class="d-flex flex-column gap-3"></div>
+          </div>
+          <div class="modal-footer border-top">
+            <button class="btn btn-dark" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  
+  document.body.insertAdjacentHTML('beforeend', historyModalHtml);
+  const historyModalEl = document.getElementById("historyModal");
+  const historyModal = new bootstrap.Modal(historyModalEl);
+  const cycleCardsEl = document.getElementById("cycleCards");
+
+  document.querySelectorAll(".historySubBtn").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const subId = btn.dataset.id;
+      const res = await fetch(`/subscription/${subId}/history/`);
+      const data = await res.json();
+      if(!data.success) return alert("Failed to fetch history");
+
+      cycleCardsEl.innerHTML = "";
+
+      // Enable cycles based on backend data
+      let enableNext = true;
+      data.cycles.forEach((cycle, idx)=>{
+        const card = document.createElement("div");
+        card.className = "card p-2 bg-white text-dark border";
+        card.style.cursor = "pointer";
+
+        if(!cycle.done && !enableNext) card.classList.add("disabled-cycle");
+
+        card.innerHTML = `
+          <strong>Cycle ${cycle.cycle_number}</strong>
+          <span class="text-success">${cycle.done ? '✔️ Done at '+cycle.done_at : 'Pending'}</span>
+        `;
+
+        card.addEventListener("click", ()=>{
+          if(card.classList.contains("disabled-cycle")) return;
+          showCyclePoojas(card, subId, cycle.cycle_number, data.poojas, cycle.poojas_done);
+        });
+
+        cycleCardsEl.appendChild(card);
+        enableNext = cycle.done;
+      });
+
+      historyModal.show();
+    });
+  });
+
+  function showCyclePoojas(cardEl, subId, cycleNumber, poojas, donePoojas){
+    cycleCardsEl.querySelectorAll(".cycle-poojas")?.forEach(el=>el.remove());
+
+    const poojaList = poojas.map(p=>{
+      const checked = donePoojas.includes(p.id) ? "checked" : "";
+      return `<div class="form-check mb-1">
+                <input class="form-check-input pooja-cycle-checkbox" type="checkbox" value="${p.id}" ${checked} id="poojaCycle${p.id}">
+                <label class="form-check-label" for="poojaCycle${p.id}">${p.pooja_name}</label>
+              </div>`;
+    }).join('');
+
+    const content = `
+      <div id="cyclePoojaContainer">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6>Cycle ${cycleNumber} Poojas</h6>
+          <button class="btn btn-sm btn-outline-dark" id="closePoojaList" title="Close">&times;</button>
+        </div>
+        <div class="mb-2">
+          <button class="btn btn-sm btn-outline-dark" id="checkAllPoojas">Check All</button>
+        </div>
+        <div>${poojaList}</div>
+        <button class="btn btn-dark mt-3" id="markDoneBtn">Done</button>
+      </div>
+    `;
+
+    const div = document.createElement("div");
+    div.className = "cycle-poojas mt-2 p-2 border rounded bg-white text-dark";
+    div.innerHTML = content;
+
+    cardEl.insertAdjacentElement('afterend', div);
+
+    div.querySelector("#checkAllPoojas").addEventListener("click", ()=>{
+      div.querySelectorAll(".pooja-cycle-checkbox").forEach(cb=>cb.checked=true);
+    });
+
+    div.querySelector("#markDoneBtn").addEventListener("click", async ()=>{
+      const selectedPoojas = Array.from(div.querySelectorAll(".pooja-cycle-checkbox:checked")).map(cb=>parseInt(cb.value));
+      const resp = await fetch("/subscription/mark_cycle_done/", {
+        method:"POST",
+        headers: {"Content-Type":"application/json","X-CSRFToken":"{{ csrf_token }}"},
+        body: JSON.stringify({subscription_id: subId, cycle_number: cycleNumber, pooja_ids: selectedPoojas})
+      });
+      const result = await resp.json();
+      if(result.success){
+        alert(result.message);
+        document.querySelector(`.historySubBtn[data-id="${subId}"]`).click();
+      } else {
+        alert(result.error || "Failed to mark done");
+      }
+    });
+
+    // Close button
+    div.querySelector("#closePoojaList").addEventListener("click", ()=>{ div.remove(); });
+  }
+});
+</script>
+
+
+<style>
+.disabled-cycle {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.cycle-poojas {
+  background: #084785ff;
+}
+</style>
 
 
 {% endblock %}

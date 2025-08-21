@@ -13,6 +13,11 @@ urlpatterns = [
     path("subscriptions/", views.subscription_list, name="subscription_list"),
     path("subscriptions/toggle/", views.toggle_subscription, name="toggle_subscription"),
     path("subscriptions/save/", views.subscription_save, name="subscription_save"),  # for AJAX save
+    path('subscriptions/delete/', views.delete_subscription, name='delete_subscription'),
+    path('subscriptions/bill/<int:subscription_id>/', views.view_subscription_bill, name='view_subscription_bill'),
+    path('subscription/<int:subscription_id>/history/', views.subscription_history, name='subscription_history'),
+    path('subscription/mark_cycle_done/', views.mark_cycle_done, name='mark_cycle_done'),
+
 
     path("report/", views.report_view, name="report_view"),
 

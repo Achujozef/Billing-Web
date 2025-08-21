@@ -7,4 +7,4 @@ admin.site.register(Subscription)
 admin.site.register(SubscriptionPooja)
 admin.site.register(Bill)
 admin.site.register(BillPooja)
-
+admin.site.register(SubscriptionCycleHistory)

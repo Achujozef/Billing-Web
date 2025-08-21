@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-v1hf1e264rvie5iu7=$&e1$53a1)j_eqz$mao!7=zv=&+nnokf'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['billing.keralaviswakarmasabha.com','*']
 
