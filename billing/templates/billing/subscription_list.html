@@ -272,6 +272,7 @@ document.addEventListener("DOMContentLoaded", function(){
     let subscriptions = {{ subscriptions_json|safe }};
     let poojas = {{ poojas_json|safe }};
     let currentDeleteId = null;
+    let currentBillData = null; // keep the bill data for printing
 
     // Filter handlers
     document.getElementById("nakshathra-filter").addEventListener("change", applyFilters);
@@ -393,7 +394,7 @@ document.addEventListener("DOMContentLoaded", function(){
         }
     });
 
-    // Show bill function
+    // Show bill in modal (preview)
     window.showBill = function(id, isNewSubscription = false) {
         const sub = subscriptions.find(s => s.id === id);
         if (!sub) return;
@@ -404,91 +405,119 @@ document.addEventListener("DOMContentLoaded", function(){
         const cycles = Math.ceil(totalDays / 28);
         const totalBillAmount = totalPoojaAmount * cycles;
 
+        currentBillData = { sub, selectedPoojas, totalPoojaAmount, cycles, totalBillAmount, totalDays };
+
+        // Preview inside modal
         const billContent = `
-            <div class="bill-header">
+            <div class="bill-header text-center">
                 <h4 class="mb-1">🕉️ Temple Subscription Bill</h4>
                 <p class="text-muted mb-0">Sacred Pooja Services</p>
             </div>
-            
-            <div class="bill-details">
-                <div class="row">
-                    <div class="col-6">
-                        <strong>Customer Name:</strong><br>
-                        <span class="text-primary fs-5">${sub.customer.name}</span>
-                    </div>
-                    <div class="col-6">
-                        <strong>Phone:</strong><br>
-                        <span>${sub.customer.phone_number || 'Not provided'}</span>
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-6">
-                        <strong>Nakshathra:</strong><br>
-                        <span class="text-success">${sub.nakshathra}</span>
-                    </div>
-                    <div class="col-6">
-                        <strong>Duration:</strong><br>
-                        <span>${sub.start_date} to ${sub.end_date}</span><br>
-                        <small class="text-muted">(${totalDays} days)</small>
-                    </div>
-                </div>
+            <hr>
+            <div>
+                <strong>പേര്:</strong> ${sub.customer.name}<br>
+                <strong>നക്ഷത്രം:</strong> ${sub.nakshathra}<br>
+                <strong>തീയതി:</strong> ${new Date().toLocaleDateString()}
             </div>
-
-            <div class="bill-table">
-                <h6 class="fw-bold mb-3">Selected Poojas:</h6>
-                <table class="table table-sm">
-                    <thead class="table-light">
+            <table class="table table-sm mt-3">
+                <thead>
+                    <tr>
+                        <th>വഴിപാടു</th>
+                        <th>അളവ് (Cycles)</th>
+                        <th>തുക</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${selectedPoojas.map(p => `
                         <tr>
-                            <th>Pooja Name</th>
-                            <th>Price per Cycle</th>
-                            <th>Cycles</th>
-                            <th>Amount</th>
+                            <td>${p.pooja_name}</td>
+                            <td>${cycles}</td>
+                            <td>₹${(parseFloat(p.price) * cycles).toFixed(0)}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        ${selectedPoojas.map(p => `
-                            <tr>
-                                <td>${p.pooja_name}</td>
-                                <td>₹${parseFloat(p.price).toFixed(0)}</td>
-                                <td>${cycles}</td>
-                                <td>₹${(parseFloat(p.price) * cycles).toFixed(0)}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="bill-total">
-                <div class="row">
-                    <div class="col-8">
-                        <p class="mb-1"><strong>Calculation:</strong></p>
-                        <small class="text-muted">
-                            Total Days: ${totalDays} ÷ 28 days per cycle = ${cycles} cycles<br>
-                            Total Pooja Amount: ₹${totalPoojaAmount.toFixed(0)} × ${cycles} cycles
-                        </small>
-                    </div>
-                    <div class="col-4 text-end">
-                        <h4 class="text-success mb-0">
-                            <strong>Total: ₹${totalBillAmount.toFixed(0)}</strong>
-                        </h4>
-                    </div>
-                </div>
-            </div>
-
-            <div class="text-center mt-4 pt-3 border-top">
-                <p class="text-muted mb-0">
-                    <small>🙏 Thank you for your devotion • Generated on ${new Date().toLocaleDateString()}</small>
-                </p>
-            </div>
+                    `).join('')}
+                </tbody>
+            </table>
+            <div class="text-end fw-bold">ആകെ തുക : ₹${totalBillAmount.toFixed(0)}</div>
         `;
 
         document.getElementById("billContent").innerHTML = billContent;
         billModal.show();
     };
 
-    // Print bill function
+    // Proper print bill
     window.printBill = function() {
-        window.print();
+        if (!currentBillData) {
+            alert("No bill to print!");
+            return;
+        }
+        const { sub, selectedPoojas, cycles, totalBillAmount } = currentBillData;
+
+        const billHtml = `
+        <div style="width:15.5cm; height:auto; border:1px solid #000; padding:5px;">
+          <!-- Header -->
+          <div style="text-align:center; font-size:14px; font-weight:bold;">
+            <img src="/static/logo.png" alt="Ganapathi" style="height:40px;"><br>
+            <span style="font-size:16px;">തഴുതല ശ്രീ മഹാഗണപതി ക്ഷേത്രം</span><br>
+            <span style="font-size:12px;">Thazhuthala, Phone: 9496363989</span><br>
+            <span style="font-size:11px;">web: www.thazhuthalasreemahaganapathi.com</span><br>
+            <span style="font-size:11px;">e-mail: thazhuthalaganapathy@gmail.com</span>
+          </div>
+          <hr>
+          <!-- Customer Info -->
+          <div style="font-size:12px; margin-bottom:6px;">
+            <div>പേര് : <strong>${sub.customer.name}</strong></div>
+            <div>നക്ഷത്രം : <strong>${sub.nakshathra}</strong></div>
+            <div>തീയതി : <strong>${new Date().toLocaleDateString()}</strong></div>
+          </div>
+          <!-- Items Table -->
+          <table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:5px;">
+            <thead>
+              <tr>
+                <th style="border:1px solid black; padding:3px;">വഴിപാടു</th>
+                <th style="border:1px solid black; padding:3px;">അളവ്</th>
+                <th style="border:1px solid black; padding:3px;">തുക</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedPoojas.map(p => `
+                <tr>
+                  <td style="border:1px solid black; padding:3px; text-align:left;">${p.pooja_name}</td>
+                  <td style="border:1px solid black; padding:3px;">${cycles}</td>
+                  <td style="border:1px solid black; padding:3px;">₹${(parseFloat(p.price) * cycles).toFixed(0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <!-- Total -->
+          <div style="text-align:right; font-weight:bold; margin-top:5px; font-size:13px;">
+            ആകെ തുക : ₹${totalBillAmount.toFixed(0)}
+          </div>
+          <!-- Secretary -->
+          <div style="margin-top:20px; text-align:right; font-size:12px;">
+            <span>സെക്രട്ടറി</span>
+          </div>
+        </div>
+        `;
+
+        const printWindow = window.open('', '', 'width=800,height=600');
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Subscription Bill</title>
+              <style>
+                @page { size: 15.5cm auto; margin: 0.5cm; }
+                body { font-family: 'Noto Sans Malayalam', sans-serif; font-size:12px; }
+                table { border-collapse: collapse; width:100%; }
+                table, th, td { border:1px solid black; }
+                th, td { padding:3px; text-align:center; }
+              </style>
+            </head>
+            <body>${billHtml}</body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+        printWindow.close();
     };
 
     // Save subscription with bill display
@@ -505,16 +534,7 @@ document.addEventListener("DOMContentLoaded", function(){
       }).then(r=>r.json()).then(d=>{
         if(d.success) {
             subModal.hide();
-            
-            // Show bill for new subscription
-            if(!id && d.subscription_id) {
-                // Reload to get the new subscription data, then show bill
-                setTimeout(() => {
-                    location.reload();
-                }, 100);
-            } else {
-                location.reload();
-            }
+            location.reload(); // reload to refresh subscriptions
         } else {
             alert(d.error);
         }
@@ -528,6 +548,7 @@ document.addEventListener("DOMContentLoaded", function(){
     }
 });
 </script>
+
 
 <!-- Customer Name Malayalam suggestions script -->
 <script>

@@ -4,28 +4,64 @@
 
   <h3 class="fw-bold text-secondary mb-4">📊 Sales Report</h3>
 
-<!-- Filter Buttons + Styled Date Inputs -->
-<form method="get" class="d-flex flex-wrap gap-2 align-items-center mb-3">
-  <input type="hidden" name="filter" value="custom">
+<!-- Filters + Summary + Print all in one line -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
 
+  <!-- Filter Buttons -->
   <a href="?filter=today" class="btn btn-outline-dark {% if filter_option == 'today' %}active{% endif %}">Today</a>
   <a href="?filter=week" class="btn btn-outline-dark {% if filter_option == 'week' %}active{% endif %}">This Week</a>
   <a href="?filter=month" class="btn btn-outline-dark {% if filter_option == 'month' %}active{% endif %}">This Month</a>
   <a href="?filter=year" class="btn btn-outline-dark {% if filter_option == 'year' %}active{% endif %}">This Year</a>
+  <a href="?" class="btn btn-outline-secondary {% if not filter_option %}active{% endif %}">All</a>
 
-  <!-- Styled Date Inputs -->
-  <input type="date" name="start_date" class="btn btn-outline-dark btn-sm date-btn" value="{{ start_date }}">
-  <input type="date" name="end_date" class="btn btn-outline-dark btn-sm date-btn" value="{{ end_date }}">
-  <button class="btn btn-dark btn-sm">Filter</button>
-</form>
+  <!-- Custom Date Range -->
+  <form method="get" class="d-flex align-items-center gap-2 m-0">
+    <input type="hidden" name="filter" value="custom">
 
-  <!-- Summary Badges -->
-  <div class="mb-3">
-    <span class="badge bg-success me-2">Total Bills: {{ total_bills }}</span>
-    <span class="badge bg-info">Total Amount: ₹{{ total_amount }}</span>
-  </div>
+    <!-- From Date Toggle -->
+    <div class="position-relative">
+      <button type="button" class="btn btn-outline-dark btn-sm" onclick="toggleDateInput('fromDateInput')">
+        Select From Date
+      </button>
+      <div id="fromDateInput" class="d-none mt-1">
+        <label class="form-label small mb-1">From</label>
+        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ start_date }}">
+      </div>
+    </div>
+
+    <!-- To Date Toggle -->
+    <div class="position-relative">
+      <button type="button" class="btn btn-outline-dark btn-sm" onclick="toggleDateInput('toDateInput')">
+        Select To Date
+      </button>
+      <div id="toDateInput" class="d-none mt-1">
+        <label class="form-label small mb-1">To</label>
+        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ end_date }}">
+      </div>
+    </div>
+
+    <button class="btn btn-dark btn-sm">Filter</button>
+  </form>
+
+  <!-- View All -->
+  <a href="?view=all{% if filter_option %}&filter={{ filter_option }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}"
+     class="btn btn-outline-primary {% if view_mode == 'all' %}active{% endif %}">
+     View All
+  </a>
+
+  <!-- Active Filter Badge -->
+  {% if filter_option %}
+    <span class="badge bg-warning text-dark">
+      Filter: {{ filter_option|title }}{% if filter_option == 'custom' and start_date and end_date %} ({{ start_date }} to {{ end_date }}){% endif %}
+    </span>
+  {% endif %}
+
+  <!-- Print Button -->
+  <button class="btn btn-dark btn-sm" onclick="printReport()">🖨️ Print Report</button>
+</div>
 
   <!-- Bill Table -->
+   <div id="printArea">
   <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
     <table class="table table-hover mb-0">
       <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
@@ -39,52 +75,72 @@
         </tr>
       </thead>
       <tbody>
-        {% for bill in bills %}
-        <tr>
-          <td>{{ bill.id }}</td>
-          <td>{{ bill.customer_name }}</td>
-          <td>{{ bill.nakshathra }}</td>
-          <td>{{ bill.date }}</td>
-          <td>₹{{ bill.total_amount }}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-primary viewBillBtn" 
-                    data-id="{{ bill.id }}" 
-                    data-customer="{{ bill.customer_name }}"
-                    data-nakshathra="{{ bill.nakshathra }}"
-                    data-date="{{ bill.date }}"
-                    data-amount="{{ bill.total_amount }}"
-                    data-poojas='{% for p in bill.poojas.all %}{{ p.pooja_name }} (₹{{ p.price }}){% if not forloop.last %}, {% endif %}{% endfor %}'>
-              View
-            </button>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="6" class="text-center text-muted">No bills found.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
+  {% for bill in bills %}
+  <tr class="{% if bill.is_cycle %}table-dark{% endif %}">
+    <td>{{ bill.id }}</td>
+    <td>{{ bill.customer_name }}</td>
+    <td>{{ bill.nakshathra }}</td>
+    <td>{{ bill.date }}</td>
+    <td>₹{{ bill.total_amount }}</td>
+    <td>
+      {% if bill.is_cycle %}
+        <span class="badge bg-secondary">Cycle</span>
+      {% endif %}
+      <button class="btn btn-sm btn-outline-primary viewBillBtn" 
+              data-id="{{ bill.id }}" 
+              data-customer="{{ bill.customer_name }}"
+              data-nakshathra="{{ bill.nakshathra }}"
+              data-date="{{ bill.date }}"
+              data-amount="{{ bill.total_amount }}"
+              data-poojas='{% for p in bill.poojas.all %}{{ p.pooja_name }} (₹{{ p.price }}){% if not forloop.last %}, {% endif %}{% endfor %}'>
+        View
+      </button>
+    </td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="6" class="text-center text-muted">No bills found.</td>
+  </tr>
+  {% endfor %}
+</tbody>
+
     </table>
   </div>
+  <!-- Totals for Print -->
+  <div class="mt-3 fw-bold">
+    <p>Total Bills: {{ total_bills }}</p>
+    <p>Total Amount: ₹{{ total_amount }}</p>
+    <p>Total Poojas: {{ total_poojas }}</p>
+  </div>
+</div>
 
-  <!-- Pagination -->
+
+  <!-- Pagination with Filter Preservation -->
   {% if page_obj %}
   <nav class="mt-3">
     <ul class="pagination pagination-sm justify-content-center">
       {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+      <li class="page-item">
+        <a class="page-link" href="?{% if filter_option %}filter={{ filter_option }}&{% endif %}{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+      </li>
       {% else %}
       <li class="page-item disabled"><span class="page-link">Previous</span></li>
       {% endif %}
+      
       {% for num in page_obj.paginator.page_range %}
         {% if page_obj.number == num %}
         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
         {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
-        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+        <li class="page-item">
+          <a class="page-link" href="?{% if filter_option %}filter={{ filter_option }}&{% endif %}{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}page={{ num }}">{{ num }}</a>
+        </li>
         {% endif %}
       {% endfor %}
+      
       {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+      <li class="page-item">
+        <a class="page-link" href="?{% if filter_option %}filter={{ filter_option }}&{% endif %}{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+      </li>
       {% else %}
       <li class="page-item disabled"><span class="page-link">Next</span></li>
       {% endif %}
@@ -107,6 +163,7 @@
         <p><strong>Nakshathra:</strong> <span id="modalNakshathra"></span></p>
         <p><strong>Date:</strong> <span id="modalDate"></span></p>
         <p><strong>Total Amount:</strong> ₹<span id="modalAmount"></span></p>
+        <p><strong>Payment Type:</strong> <span id="modalPaymentType"></span></p>
         <p><strong>Poojas:</strong> <span id="modalPoojas"></span></p>
       </div>
       <div class="modal-footer">
@@ -116,6 +173,7 @@
     </div>
   </div>
 </div>
+
 <style>
 /* Make date inputs look like buttons */
 input[type="date"].date-btn {
@@ -132,15 +190,26 @@ input[type="date"].date-btn {
 
 input[type="date"].date-btn::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  filter: invert(0.5); /* optional: make icon visible on dark buttons */
+  filter: invert(0.5);
 }
 
 input[type="date"].date-btn:focus {
   outline: none;
   box-shadow: 0 0 0 0.2rem rgba(52, 58, 64, 0.25);
 }
-</style>
 
+/* Styling for cycle payment rows */
+.table-dark td {
+  background-color: rgba(52, 58, 64, 0.1) !important;
+  border-color: rgba(52, 58, 64, 0.2);
+}
+
+/* Active filter button styling */
+.btn.active {
+  background-color: #343a40 !important;
+  color: white !important;
+}
+</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
@@ -153,9 +222,32 @@ document.addEventListener("DOMContentLoaded", function(){
       document.getElementById("modalDate").innerText = btn.dataset.date;
       document.getElementById("modalAmount").innerText = btn.dataset.amount;
       document.getElementById("modalPoojas").innerText = btn.dataset.poojas;
+      
+      // Set payment type based on cycle status
+      const isCycle = btn.dataset.cycle === 'true';
+      document.getElementById("modalPaymentType").innerHTML = isCycle 
+        ? '<span class="badge bg-secondary">Cycle Payment</span>' 
+        : '<span class="badge bg-success">Direct Payment</span>';
+      
       billModal.show();
     });
   });
 });
+</script>
+<script>
+function printReport() {
+  const printContents = document.getElementById("printArea").innerHTML;
+  const originalContents = document.body.innerHTML;
+  document.body.innerHTML = printContents;
+  window.print();
+  document.body.innerHTML = originalContents;
+  location.reload(); // reload back UI after print
+}
+</script>
+<script>
+  function toggleDateInput(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle("d-none");
+  }
 </script>
 {% endblock %}

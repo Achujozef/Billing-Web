@@ -10,6 +10,10 @@ from django.http import JsonResponse
 from .models import Pooja, Subscription, Customer
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from datetime import datetime, date
 from django.utils.dateparse import parse_date
 from django.http import JsonResponse
@@ -27,6 +31,8 @@ from .models import Bill
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
 
+
+@login_required(login_url="login")
 def dashboard(request):
     try:
         poojas = Pooja.objects.all().order_by("pooja_name")
@@ -90,7 +96,7 @@ def generate_bill(request):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
     
-
+@login_required(login_url="login")
 def pooja_list(request):
     poojas = Pooja.objects.all().order_by("id")
     return render(request, "billing/poojas.html", {"poojas": poojas})
@@ -130,6 +136,8 @@ def delete_pooja(request, pk):
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+@login_required(login_url="login")
 def subscription_list(request):
     selected_nakshathra = request.GET.get("nakshathra", "")
     selected_status = request.GET.get("status", "")
@@ -381,11 +389,12 @@ def mark_cycle_done(request):
             return JsonResponse({"success": False, "error": str(e)})
     return JsonResponse({"success": False, "error": "Invalid request"})
 
-
+@login_required(login_url="login")
 def report_view(request):
-    filter_option = request.GET.get("filter")  # today, week, month, year, custom
+    filter_option = request.GET.get("filter")
     start_date = request.GET.get("start_date")
     end_date = request.GET.get("end_date")
+    view_mode = request.GET.get("view")  
     page = int(request.GET.get("page", 1))
 
     today = timezone.now().date()
@@ -399,7 +408,7 @@ def report_view(request):
             start_week = today - timedelta(days=today.weekday())
             bills_qs = bills_qs.filter(date__gte=start_week, date__lte=today)
         elif filter_option == "month":
-            bills_qs = bills_qs.filter(date__month=today.month, date__year=today.year)
+            bills_qs = bills_qs.filter(date__year=today.year, date__month=today.month)
         elif filter_option == "year":
             bills_qs = bills_qs.filter(date__year=today.year)
         elif filter_option == "custom" and start_date and end_date:
@@ -407,30 +416,37 @@ def report_view(request):
                 start = datetime.strptime(start_date, "%Y-%m-%d").date()
                 end = datetime.strptime(end_date, "%Y-%m-%d").date()
                 bills_qs = bills_qs.filter(date__gte=start, date__lte=end)
-            except:
+            except ValueError:
                 pass
-        bills = bills_qs  # Use full filtered queryset
-        total_bills = bills.count()
-        total_amount = bills.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
+
+    # Pagination or All
+    if view_mode == "all":
+        bills = bills_qs
         page_obj = None
     else:
-        # Paginate only if no filter selected
-        paginator = Paginator(bills_qs, 2)  # 20 bills per page
+        paginator = Paginator(bills_qs, 20)
         page_obj = paginator.get_page(page)
         bills = page_obj.object_list
-        total_bills = paginator.count
-        total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
-    print("Bill Count is",bills.count())
+
+    # Totals
+    total_bills = bills_qs.count()
+    total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
+    total_poojas = sum(bill.poojas.count() for bill in bills_qs)
+
     context = {
         "bills": bills,
         "total_bills": total_bills,
         "total_amount": total_amount,
+        "total_poojas": total_poojas,
         "filter_option": filter_option or "",
         "start_date": start_date or "",
         "end_date": end_date or "",
         "page_obj": page_obj,
+        "view_mode": view_mode or "",
     }
     return render(request, "billing/report.html", context)
+
+
 
 
 import requests
@@ -467,3 +483,27 @@ def transliterate(request):
         return JsonResponse({"suggestions": suggestions})
     except Exception as e:
         return JsonResponse({"suggestions": [], "error": str(e)}, status=502)
+    
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")  # or wherever you want to redirect after login
+
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return redirect("dashboard")  # change "dashboard" to your main page
+        else:
+            messages.error(request, "Invalid username or password")
+
+    return render(request, "login.html")
+
+
+def logout_view(request):
+    logout(request)
+    return redirect("login")

@@ -368,7 +368,7 @@
     };
   }
 
-  function printBill() {
+  {% comment %} function printBill() {
     const cust = document.getElementById("cust-name").value;
     const nak = document.getElementById("nakshathra").value;
 
@@ -413,7 +413,120 @@
       }
     })
     .catch(err => alert("AJAX Error: " + err));
+  } {% endcomment %}
+function printBill() {
+  const cust = document.getElementById("cust-name").value;
+  const nak = document.getElementById("nakshathra").value;
+
+  if (!cust || !nak || cart.length === 0) {
+    alert("Please fill all details and select products before printing.");
+    return;
   }
+
+  const total = cart.reduce((sum, p) => sum + p.price * p.qty, 0);
+
+  // Save the bill first
+  fetch("{% url 'generate_bill' %}", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": "{{ csrf_token }}"
+    },
+    body: JSON.stringify({
+      customer_name: cust,
+      nakshathra: nak,
+      cart: cart.map((p, i) => ({ id: i + 1, name: p.name, price: p.price, qty: p.qty })),
+      total: total
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+
+      // Malayalam style bill template
+      let billHtml = `
+        <div style="width:15.5cm; height:10cm; border:1px solid #000; padding:5px;">
+
+          <!-- Header -->
+          <div style="text-align:center; font-size:14px; font-weight:bold;">
+            <img src="/static/logo.png" alt="Ganapathi" style="height:40px;"><br>
+            <span style="font-size:16px;">തഴുതല ശ്രീ മഹാഗണപതി ക്ഷേത്രം</span><br>
+            <span style="font-size:12px;">Thazhuthala, Phone: 9496363989</span><br>
+            <span style="font-size:11px;">web: www.thazhuthalasreemahaganapathi.com</span><br>
+            <span style="font-size:11px;">e-mail: thazhuthalaganapathy@gmail.com</span>
+          </div>
+
+          <hr>
+
+          <!-- Customer Info Row -->
+          <div style="font-size:12px; margin-bottom:6px;">
+            <div>പേര് : <strong>${cust}</strong></div>
+            <div>നക്ഷത്രം : <strong>${nak}</strong></div>
+            <div>തീയതി : <strong>${new Date().toLocaleDateString()}</strong></div>
+          </div>
+
+          <!-- Items Table -->
+          <table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:5px;">
+            <thead>
+              <tr>
+                <th style="border:1px solid black; padding:3px;">വഴിപാടു</th>
+                <th style="border:1px solid black; padding:3px;">അളവ്</th>
+                <th style="border:1px solid black; padding:3px;">തുക</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cart.map(p => `
+                <tr>
+                  <td style="border:1px solid black; padding:3px; text-align:left;">${p.name}</td>
+                  <td style="border:1px solid black; padding:3px;">${p.qty}</td>
+                  <td style="border:1px solid black; padding:3px;">₹${p.price * p.qty}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <!-- Total -->
+          <div style="text-align:right; font-weight:bold; margin-top:5px; font-size:13px;">
+            ആകെ തുക : ₹${total}
+          </div>
+
+          <!-- Secretary -->
+          <div style="margin-top:20px; text-align:right; font-size:12px;">
+            <span>സെക്രട്ടറി</span>
+          </div>
+        </div>
+      `;
+
+      // Open new print window
+      const printWindow = window.open('', '', 'width=800,height=600');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Bill</title>
+            <style>
+              @page { size: 15.5cm 10cm; margin: 0.5cm; }
+              body { font-family: 'Noto Sans Malayalam', sans-serif; font-size:12px; }
+              table { border-collapse: collapse; width:100%; }
+              table, th, td { border:1px solid black; }
+              th, td { padding:3px; text-align:center; }
+            </style>
+          </head>
+          <body>${billHtml}</body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+
+      // Reset cart after printing
+      cart = [];
+      renderCart();
+    } else {
+      alert("Error saving bill: " + data.error);
+    }
+  })
+  .catch(err => alert("AJAX Error: " + err));
+}
 
   function clearCalculator() {
   // Clear the paid input

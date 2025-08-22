@@ -169,33 +169,48 @@
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div class="sidebar d-flex flex-column">
-    <div>
-      <div class="sidebar-header">
-        <h4>Temple Billing</h4>
-      </div>
-      <nav class="nav flex-column">
-        <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-          📊 Dashboard
-        </a>
-        <a href="{% url 'pooja_list' %}" class="nav-link {% if request.resolver_match.url_name == 'pooja_list' %}active{% endif %}">
-          🙏 Poojas
-        </a>
-        <a href="{% url 'subscription_list' %}" class="nav-link {% if request.resolver_match.url_name == 'subscription_list' %}active{% endif %}">
-          📜 Subscription
-        </a>
-        <a href="{% url 'report_view' %}" class="nav-link {% if request.resolver_match.url_name == 'report_view' %}active{% endif %}">
-          📑 Report
-        </a>
-      </nav>
+<!-- Sidebar -->
+<div class="sidebar d-flex flex-column">
+  <div>
+    <div class="sidebar-header">
+      <h4>Temple Billing</h4>
     </div>
-    <div class="sidebar-footer">
-      <span class="navbar-text">
-        👋 Welcome! Today: {{ current_date }} | Time: <span id="clock">{{ current_time }}</span>
-      </span>
-    </div>
+    <nav class="nav flex-column">
+      <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        📊 Dashboard
+      </a>
+      <a href="{% url 'pooja_list' %}" class="nav-link {% if request.resolver_match.url_name == 'pooja_list' %}active{% endif %}">
+        🙏 Poojas
+      </a>
+      <a href="{% url 'subscription_list' %}" class="nav-link {% if request.resolver_match.url_name == 'subscription_list' %}active{% endif %}">
+        📜 Subscription
+      </a>
+      <a href="{% url 'report_view' %}" class="nav-link {% if request.resolver_match.url_name == 'report_view' %}active{% endif %}">
+        📑 Report
+      </a>
+    </nav>
   </div>
+  
+<!-- Sidebar Footer -->
+<div class="sidebar-footer">
+  <div class="d-flex flex-column gap-2 text-center">
+    <span class="navbar-text text-white">
+      👋 Welcome! Today: {{ current_date }} | Time: <span id="clock">{{ current_time }}</span>
+    </span>
+    <a href="{% url 'logout' %}" class="btn btn-sm btn-danger w-100">🚪 Logout</a>
+
+    <!-- Credit & Rights Section -->
+    <small class="text-white mt-2 d-block">
+      ⚡ Built with ❤️ by <strong>Ecomix</strong><br>
+      © {{ current_date|date:"Y" }} Ecomix. All Rights Reserved.
+    </small>
+  </div>
+</div>
+
+
+
+</div>
+
 
   <!-- Main Content -->
   <div class="content">
