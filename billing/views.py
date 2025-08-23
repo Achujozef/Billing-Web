@@ -35,7 +35,8 @@ from django.core.paginator import Paginator
 @login_required(login_url="login")
 def dashboard(request):
     try:
-        poojas = Pooja.objects.all().order_by("pooja_name")
+        poojas = Pooja.objects.all().order_by("id")  # ascending (oldest first)
+        # For newest first: .order_by("-id")
     except Exception as e:
         poojas = []
         print("Error fetching poojas:", e)
@@ -453,38 +454,157 @@ import requests
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 
+# @require_GET
+# def transliterate(request):
+#     """
+#     Proxy to Google Input Tools (Malayalam transliteration).
+#     Avoids browser CORS issues.
+#     """
+#     q = (request.GET.get("q") or "").strip()
+#     print("Query: ",q)
+#     if not q:
+#         return JsonResponse({"suggestions": []})
+
+#     try:
+#         headers = {
+#             "User-Agent": "Mozilla/5.0",
+#             "Referer": "https://www.google.com/inputtools/try/",
+#         }
+#         r = requests.get("https://www.google.com/inputtools/request", params={
+#             "text": q,
+#             "itc": "ml-t-i0-und",
+#             "num": 5,
+#             "ie": "utf-8",
+#             "oe": "utf-8",
+#         }, headers=headers, timeout=5)
+#         print(r.json())
+#         data = r.json()
+#         suggestions = data[1][0][1] if data and data[0] == "SUCCESS" else []
+#         print("suggestions :",suggestions)
+#         return JsonResponse({"suggestions": suggestions})
+#     except Exception as e:
+#         return JsonResponse({"suggestions": [], "error": str(e)}, status=502)
+    
+from django.db.models import Q
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+import unicodedata
+import requests
+
+def _normalize(s: str) -> str:
+    # Malayalam is caseless, but casefold keeps behavior consistent across scripts.
+    return unicodedata.normalize("NFC", (s or "").strip()).casefold()
+
+def _is_malayalam(s: str) -> bool:
+    return any('\u0D00' <= ch <= '\u0D7F' for ch in s or "")
+
 @require_GET
 def transliterate(request):
     """
-    Proxy to Google Input Tools (Malayalam transliteration).
-    Avoids browser CORS issues.
+    Google Input Tools proxy (Malayalam).
+    Also surfaces DB names (Customer/Bill/Subscription.customer)
+    that start with the typed/suggested Malayalam prefix.
     """
-    q = (request.GET.get("q") or "").strip()
-    print("Query: ",q)
-    if not q:
+    q_raw = (request.GET.get("q") or "").strip()
+    if not q_raw:
         return JsonResponse({"suggestions": []})
 
     try:
+        # ---- 1) Get Google suggestions ----
         headers = {
             "User-Agent": "Mozilla/5.0",
             "Referer": "https://www.google.com/inputtools/try/",
         }
-        r = requests.get("https://www.google.com/inputtools/request", params={
-            "text": q,
-            "itc": "ml-t-i0-und",
-            "num": 5,
-            "ie": "utf-8",
-            "oe": "utf-8",
-        }, headers=headers, timeout=5)
-        print(r.json())
+        r = requests.get(
+            "https://www.google.com/inputtools/request",
+            params={
+                "text": q_raw,
+                "itc": "ml-t-i0-und",
+                "num": 10,
+                "ie": "utf-8",
+                "oe": "utf-8",
+            },
+            headers=headers,
+            timeout=5,
+        )
         data = r.json()
         suggestions = data[1][0][1] if data and data[0] == "SUCCESS" else []
-        print("suggestions :",suggestions)
-        return JsonResponse({"suggestions": suggestions})
-    except Exception as e:
-        return JsonResponse({"suggestions": [], "error": str(e)}, status=502)
-    
 
+        # Build prefixes we’ll search DB with:
+        # - If user typed Malayalam, include q_raw itself
+        # - Always include Google's Malayalam suggestions
+        prefixes = []
+        seen_p = set()
+        if _is_malayalam(q_raw):
+            prefixes.append(q_raw); seen_p.add(_normalize(q_raw))
+        for s in suggestions:
+            ns = _normalize(s)
+            if s and ns not in seen_p:
+                prefixes.append(s); seen_p.add(ns)
+
+        if not prefixes:
+            # Nothing Malayalam to search by → just return Google’s output
+            return JsonResponse({"suggestions": suggestions})
+
+        # ---- 2) Query DB for names starting with any prefix ----
+        def startswith_q(field: str) -> Q:
+            qobj = Q()
+            for p in prefixes:
+                qobj |= Q(**{f"{field}__istartswith": p})
+            return qobj
+
+        cust_qs = Customer.objects.filter(startswith_q("name")) \
+                                  .order_by("name") \
+                                  .values_list("name", flat=True)[:20]
+        bill_qs = Bill.objects.filter(startswith_q("customer_name")) \
+                              .order_by("customer_name") \
+                              .values_list("customer_name", flat=True)[:20]
+        sub_qs  = Subscription.objects.filter(startswith_q("customer__name")) \
+                                      .order_by("customer__name") \
+                                      .values_list("customer__name", flat=True)[:20]
+
+        # Keep DB order stable, dedupe while preserving order
+        db_candidates = list(dict.fromkeys(list(cust_qs) + list(bill_qs) + list(sub_qs)))
+
+        # ---- 3) Rank DB hits: exact > prefix ----
+        s_norms = [_normalize(p) for p in prefixes]
+        s_norms_set = set(s_norms)
+
+        def db_rank(name: str):
+            n = _normalize(name)
+            if n in s_norms_set:                                 # exact
+                return (0, name)
+            if any(n.startswith(sn) or sn.startswith(n) for sn in s_norms):  # prefix either way
+                return (1, name)
+            return (2, name)
+
+        db_hits = sorted(db_candidates, key=db_rank)
+
+        # ---- 4) Merge DB hits (first) + Google (next) with dedupe ----
+        final, seen = [], set()
+        for n in db_hits:
+            nn = _normalize(n)
+            if nn not in seen:
+                final.append(n); seen.add(nn)
+
+        for s in suggestions:
+            ns = _normalize(s)
+            if ns not in seen:
+                final.append(s); seen.add(ns)
+
+        # Trim to a tidy list
+        return JsonResponse({"suggestions": final[:10]})
+
+    except Exception as e:
+        # Fallback: if user typed Malayalam, at least return DB matches
+        if _is_malayalam(q_raw):
+            fallback_q = Q(name__istartswith=q_raw)
+            cust = list(Customer.objects.filter(fallback_q).values_list("name", flat=True)[:10])
+            bill = list(Bill.objects.filter(customer_name__istartswith=q_raw).values_list("customer_name", flat=True)[:10])
+            sub  = list(Subscription.objects.filter(customer__name__istartswith=q_raw).values_list("customer__name", flat=True)[:10])
+            merged = list(dict.fromkeys(cust + bill + sub))[:10]
+            return JsonResponse({"suggestions": merged, "fallback": True}, status=200)
+        return JsonResponse({"suggestions": [], "error": str(e)}, status=502)
 
 def login_view(request):
     if request.user.is_authenticated:
