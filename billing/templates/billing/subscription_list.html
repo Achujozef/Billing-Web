@@ -745,11 +745,13 @@ document.addEventListener("DOMContentLoaded", function(){
         card.style.cursor = "pointer";
 
         if(!cycle.done && !enableNext) card.classList.add("disabled-cycle");
+            card.innerHTML = `
+              <strong>Cycle ${cycle.cycle_number}</strong>
+              <span class="text-success">
+                ${cycle.done ? "✔️ Done at " + formatDateTime(cycle.done_at) : "Pending"}
+              </span>
+            `;
 
-        card.innerHTML = `
-          <strong>Cycle ${cycle.cycle_number}</strong>
-          <span class="text-success">${cycle.done ? '✔️ Done at '+cycle.done_at : 'Pending'}</span>
-        `;
 
         card.addEventListener("click", ()=>{
           if(card.classList.contains("disabled-cycle")) return;
@@ -819,6 +821,23 @@ document.addEventListener("DOMContentLoaded", function(){
     div.querySelector("#closePoojaList").addEventListener("click", ()=>{ div.remove(); });
   }
 });
+
+function formatDateTime(dateString) {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+
+  const day = d.getDate().toString().padStart(2, "0");
+  const month = d.toLocaleString("en-US", { month: "long" });
+  const year = d.getFullYear();
+
+  let hours = d.getHours();
+  const minutes = d.getMinutes().toString().padStart(2, "0");
+  const ampm = hours >= 12 ? "pm" : "am";
+  hours = hours % 12 || 12;
+
+  return `${day} - ${month} - ${year} (${hours}:${minutes} ${ampm})`;
+}
+
 </script>
 
 

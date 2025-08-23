@@ -1,36 +1,37 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.db import transaction
-from datetime import datetime
+# Standard Library
 import json
 import math
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from .models import Pooja, Subscription, Customer
-from django.views.decorators.csrf import csrf_exempt
-import json
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from datetime import datetime, date
-from django.utils.dateparse import parse_date
-from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
+import unicodedata
+from datetime import date, datetime, timedelta
 from decimal import Decimal
-from django.utils import timezone
-from datetime import date
-from .models import Pooja, Bill, BillPooja, NAKSHATHRA_CHOICES, SubscriptionCycleHistory
-from django.utils.dateparse import parse_date
-from django.shortcuts import render
-from django.utils import timezone
-from django.db.models import Sum
-from .models import Bill
-from datetime import datetime, timedelta
-from django.core.paginator import Paginator
 
+# Third-Party
+import requests
+from dateutil.relativedelta import relativedelta
+
+# Django Core
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone, dateparse
+from django.db import transaction
+from django.db.models import Q, Sum
+from django.core.paginator import Paginator
+from django.utils.dateparse import parse_date
+# Local App Imports
+from .models import (
+    Pooja,
+    Subscription,
+    Customer,
+    Bill,
+    BillPooja,
+    NAKSHATHRA_CHOICES,
+    SubscriptionCycleHistory,
+)
 
 @login_required(login_url="login")
 def dashboard(request):
@@ -138,6 +139,19 @@ def delete_pooja(request, pk):
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
 
+
+
+
+def calculate_month_cycles(start_date, end_date):
+    """Return number of whole months between start_date and end_date (inclusive)."""
+    if not start_date or not end_date:
+        return 0
+
+    diff = relativedelta(end_date, start_date)
+    months = diff.years * 12 + diff.months + 1  # +1 to include the starting month
+    return max(1, months)
+
+
 @login_required(login_url="login")
 def subscription_list(request):
     selected_nakshathra = request.GET.get("nakshathra", "")
@@ -162,10 +176,9 @@ def subscription_list(request):
         
         # Calculate total bill amount - convert Decimal to float
         total_pooja_amount = sum(float(p.price) for p in sub.poojas.all())
-        cycles = max(1, total_days / 28)  # At least 1 cycle
-        rounded_cycles = math.ceil(cycles)  # Use ceil for better billing
-        total_bill_amount = total_pooja_amount * rounded_cycles
-        
+        cycles = calculate_month_cycles(sub.start_date, sub.end_date)
+        total_bill_amount = total_pooja_amount * cycles
+                
         subs_json.append({
             "id": sub.id,
             "customer": {
@@ -321,7 +334,7 @@ def view_subscription_bill(request, subscription_id):
     # Calculate bill details
     total_days = (subscription.end_date - subscription.start_date).days + 1
     total_pooja_amount = sum(float(p.price) for p in subscription.poojas.all())
-    cycles = max(1, math.ceil(total_days / 28))  # Round up cycles
+    cycles = calculate_month_cycles(subscription.start_date, subscription.end_date)
     total_bill_amount = total_pooja_amount * cycles
     
     context = {
@@ -346,10 +359,8 @@ class DecimalEncoder(json.JSONEncoder):
 # Fetch subscription cycle history
 def subscription_history(request, subscription_id):
     subscription = get_object_or_404(Subscription, id=subscription_id)
-    total_days = (subscription.end_date - subscription.start_date).days + 1
-    cycles = max(1, math.ceil(total_days / 28))
+    cycles = calculate_month_cycles(subscription.start_date, subscription.end_date)
 
-    # Get existing histories
     histories = subscription.cycle_histories.all()
 
     hist_data = []
@@ -363,8 +374,8 @@ def subscription_history(request, subscription_id):
         })
 
     poojas = list(subscription.poojas.values("id", "pooja_name"))
-
     return JsonResponse({"success": True, "cycles": hist_data, "poojas": poojas})
+
 
 # Mark a cycle done
 @csrf_exempt
@@ -383,8 +394,7 @@ def mark_cycle_done(request):
                 cycle_number=cycle_number
             )
             history.poojas_done.set(Pooja.objects.filter(id__in=pooja_ids))
-            history.save()
-
+            print("Hostory: ",history)
             return JsonResponse({"success": True, "message": f"Cycle {cycle_number} marked done!"})
         except Exception as e:
             return JsonResponse({"success": False, "error": str(e)})
@@ -450,46 +460,6 @@ def report_view(request):
 
 
 
-import requests
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-
-# @require_GET
-# def transliterate(request):
-#     """
-#     Proxy to Google Input Tools (Malayalam transliteration).
-#     Avoids browser CORS issues.
-#     """
-#     q = (request.GET.get("q") or "").strip()
-#     print("Query: ",q)
-#     if not q:
-#         return JsonResponse({"suggestions": []})
-
-#     try:
-#         headers = {
-#             "User-Agent": "Mozilla/5.0",
-#             "Referer": "https://www.google.com/inputtools/try/",
-#         }
-#         r = requests.get("https://www.google.com/inputtools/request", params={
-#             "text": q,
-#             "itc": "ml-t-i0-und",
-#             "num": 5,
-#             "ie": "utf-8",
-#             "oe": "utf-8",
-#         }, headers=headers, timeout=5)
-#         print(r.json())
-#         data = r.json()
-#         suggestions = data[1][0][1] if data and data[0] == "SUCCESS" else []
-#         print("suggestions :",suggestions)
-#         return JsonResponse({"suggestions": suggestions})
-#     except Exception as e:
-#         return JsonResponse({"suggestions": [], "error": str(e)}, status=502)
-    
-from django.db.models import Q
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-import unicodedata
-import requests
 
 def _normalize(s: str) -> str:
     # Malayalam is caseless, but casefold keeps behavior consistent across scripts.
