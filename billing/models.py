@@ -100,7 +100,7 @@ class Bill(models.Model):
 class BillPooja(models.Model):
     bill = models.ForeignKey(Bill, on_delete=models.CASCADE)
     pooja = models.ForeignKey(Pooja, on_delete=models.CASCADE)
-
+    quantity = models.PositiveIntegerField(null=True, blank=True, default=1)
     def __str__(self):
         return f"Bill {self.bill.id} → {self.pooja.pooja_name}"
 
@@ -116,3 +116,11 @@ class SubscriptionCycleHistory(models.Model):
 
     def __str__(self):
         return f"{self.subscription.customer.name} - Cycle {self.cycle_number} ({self.done_at.strftime('%Y-%m-%d %H:%M')})"
+    
+class SubscriptionBill(models.Model):
+    subscription = models.ForeignKey("Subscription", on_delete=models.CASCADE, related_name="subscription_bills")
+    bill = models.ForeignKey("Bill", on_delete=models.CASCADE, related_name="subscription_bills")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Subscription {self.subscription.id} ↔ Bill {self.bill.id}"

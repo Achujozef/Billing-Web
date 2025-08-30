@@ -4,6 +4,7 @@ import math
 import unicodedata
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from django.db.models import Sum, Count, Avg, Max, Min,F
 
 # Third-Party
 import requests
@@ -31,6 +32,8 @@ from .models import (
     BillPooja,
     NAKSHATHRA_CHOICES,
     SubscriptionCycleHistory,
+    SubscriptionBill,
+
 )
 
 @login_required(login_url="login")
@@ -56,7 +59,7 @@ def dashboard(request):
 # ------------------------
 @csrf_exempt
 def generate_bill(request):
-    """Handles bill creation via AJAX safely with error handling"""
+    """Handles bill creation with quantities and price validation"""
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
 
@@ -66,7 +69,6 @@ def generate_bill(request):
         customer_name = data.get("customer_name")
         nakshathra = data.get("nakshathra")
         cart = data.get("cart", [])
-        total_amount = data.get("total", 0)
 
         if not customer_name or not nakshathra or not cart:
             return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
@@ -79,16 +81,36 @@ def generate_bill(request):
             bill = Bill.objects.create(
                 customer_name=customer_name,
                 nakshathra=nakshathra,
-                total_amount=total_amount,
+                total_amount=0  # will update later
             )
 
+            total_amount = 0
             for item in cart:
                 pooja_id = item.get("id")
+                qty = int(item.get("qty", 1))
+
+                if qty <= 0:
+                    continue  # skip invalid qty
+
                 try:
                     pooja = Pooja.objects.get(id=pooja_id)
-                    BillPooja.objects.create(bill=bill, pooja=pooja)
                 except Pooja.DoesNotExist:
-                    continue  # skip invalid products
+                    continue  # skip invalid product
+
+                # calculate subtotal
+                subtotal = pooja.price * qty
+                total_amount += subtotal
+
+                # create relation with quantity
+                BillPooja.objects.create(
+                    bill=bill,
+                    pooja=pooja,
+                    quantity=qty
+                )
+
+            # update final total
+            bill.total_amount = total_amount
+            bill.save()
 
         return JsonResponse({"success": True, "bill_id": bill.id})
 
@@ -97,6 +119,7 @@ def generate_bill(request):
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
     
 @login_required(login_url="login")
 def pooja_list(request):
@@ -268,16 +291,46 @@ def subscription_save(request):
                     is_active=True
                 )
                 created_sub_id = subscription.id
-
+            if not pooja_ids:
+                return JsonResponse({
+                "success": True, 
+                "subscription_id": created_sub_id,
+                "message": "Subscription saved successfully without poojas!"
+            })
             # Update poojas
-            if pooja_ids:
-                subscription.poojas.set(Pooja.objects.filter(id__in=pooja_ids))
-            else:
-                subscription.poojas.clear()
+            pooja_objs = Pooja.objects.filter(id__in=pooja_ids)
+            subscription.poojas.set(pooja_objs)
+
+           # --- Calculate cycles ---
+            cycles = calculate_month_cycles(start_date, end_date)  # helper function you already have
+
+            # --- Calculate total amount ---
+            total_pooja_amount = sum(float(p.price) for p in pooja_objs)
+            total_amount = total_pooja_amount * cycles
+
+            # --- Create Bill ---
+            bill = Bill.objects.create(
+                customer_name=customer_name,
+                nakshathra=nakshathra,
+                total_amount=total_amount
+            )
+
+            # --- Create BillPooja with quantity = cycles ---
+            for p in pooja_objs:
+                BillPooja.objects.create(
+                    bill=bill,
+                    pooja=p,
+                    quantity=cycles
+                )
+
+            # --- Link Subscription ↔ Bill ---
+            SubscriptionBill.objects.create(subscription=subscription, bill=bill)
+
 
             return JsonResponse({
                 "success": True, 
                 "subscription_id": created_sub_id,
+                "bill_id": bill.id,
                 "message": "Subscription saved successfully!"
             })
 
@@ -467,7 +520,7 @@ def report_view(request):
     report_type = request.GET.get("report", "bill")  # default bill
 
     today = timezone.now().date()
-    bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-date")
+    bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-id")
 
     # Filtering
     if filter_option:
@@ -517,18 +570,19 @@ def report_view(request):
 
     # --- PRODUCT REPORT ---
     else:
-        from django.db.models import Count, F
-        # flatten all poojas sold in period
         product_data = (
             Pooja.objects.filter(billpooja__bill__in=bills_qs)
             .values("id", "pooja_name", "price")
-            .annotate(quantity=Count("billpooja"), total=Sum("price"))
+            .annotate(
+                quantity=Sum("billpooja__quantity"),   # ✅ sum of quantities from BillPooja
+                total=Sum(F("price") * F("billpooja__quantity"))  # ✅ total = price × quantity
+            )
             .order_by("pooja_name")
         )
 
         total_products = product_data.count()
-        total_quantity = sum(p["quantity"] for p in product_data)
-        total_amount = sum(p["total"] for p in product_data)
+        total_quantity = sum(p["quantity"] or 0 for p in product_data)
+        total_amount = sum(p["total"] or 0 for p in product_data)
 
         context = {
             "report_type": "product",
@@ -541,6 +595,7 @@ def report_view(request):
             "end_date": end_date or "",
             "view_mode": view_mode or "",
         }
+
 
     return render(request, "billing/report.html", context)
 
