@@ -65,9 +65,11 @@
         <div class="card p-2 h-100 text-center shadow-sm border-0 rounded-3" style="background:#ffffff;">
           <h6 class="fw-semibold" style="font-size:0.9rem;">{{ pooja.pooja_name }}</h6>
           <p class="mb-2 text-muted" style="font-size:0.85rem;">₹{{ pooja.price }}</p>
-          <button class="btn btn-outline-dark btn-sm w-100" onclick="addProduct('{{ pooja.pooja_name }}', {{ pooja.price }})">
-            Add
-          </button>
+        <button class="btn btn-outline-dark btn-sm w-100" 
+                onclick="addProduct({{ pooja.id }}, '{{ pooja.pooja_name }}', {{ pooja.price }})">
+          Add
+        </button>
+
         </div>
       </div>
     {% endfor %}
@@ -182,11 +184,11 @@
                     </div>
                     
                     <!-- Add Button -->
-                    <button class="btn btn-outline-dark btn-sm w-100" 
-                            style="padding: 4px 8px; font-size: 0.8rem; font-weight: 600;"
-                            onclick="addProduct('{{ pooja.pooja_name }}', {{ pooja.price }})">
-                      Add
-                    </button>
+                  <button class="btn btn-outline-dark btn-sm w-100" 
+                          onclick="addProduct({{ pooja.id }}, '{{ pooja.pooja_name }}', {{ pooja.price }})">
+                    Add
+                  </button>
+
                   </div>
                 </div>
               </div>
@@ -238,15 +240,16 @@
 <script>
   let cart = [];
   
-  function addProduct(name, price) {
-    let item = cart.find(p => p.name === name);
-    if(item) {
-      item.qty++;
-    } else {
-      cart.push({name, price, qty:1});
+    function addProduct(id, name, price) {
+      let item = cart.find(p => p.id === id);
+      if (item) {
+        item.qty++;
+      } else {
+        cart.push({ id, name, price, qty: 1 });
+      }
+      renderCart();
     }
-    renderCart();
-  }
+
 
   function updateQty(name, change) {
     let item = cart.find(p => p.name === name);
@@ -350,7 +353,7 @@
         body: JSON.stringify({
           customer_name: cust,
           nakshathra: nak,
-          cart: cart.map((p,i) => ({id: i+1, name:p.name, price:p.price, qty:p.qty})),
+          cart: cart.map((p,i) => ({id: p.id, name:p.name, price:p.price, qty:p.qty})),
           total: total
         })
       })
