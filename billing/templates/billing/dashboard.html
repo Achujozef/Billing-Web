@@ -92,7 +92,7 @@
     </div> {% endcomment %}
     <!-- Customer Name Input -->
 <div class="mb-3 position-relative">
-  <label class="form-label fw-bold">Customer Name</label>
+  <label class="form-label fw-bold">പേര്</label>
   <input type="text" id="cust-name" class="form-control" placeholder="Enter Customer Name">
   <div id="customer_suggestions" class="list-group position-absolute w-100 shadow-sm d-none" 
        style="z-index:1000; max-height:200px; overflow-y:auto;"></div>
@@ -100,7 +100,7 @@
 
 
     <div class="mb-4">
-      <label class="form-label fw-medium">Nakshathra</label>
+      <label class="form-label fw-medium">നക്ഷത്രം</label>
       <select id="nakshathra" class="form-select form-select-lg" style="height:55px; font-size:1.1rem;">
         <option value="">Select Nakshathra</option>
         {% for nk, val in NAKSHATHRA_CHOICES %}

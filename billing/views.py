@@ -400,6 +400,63 @@ def mark_cycle_done(request):
             return JsonResponse({"success": False, "error": str(e)})
     return JsonResponse({"success": False, "error": "Invalid request"})
 
+# @login_required(login_url="login")
+# def report_view(request):
+#     filter_option = request.GET.get("filter")
+#     start_date = request.GET.get("start_date")
+#     end_date = request.GET.get("end_date")
+#     view_mode = request.GET.get("view")  
+#     page = int(request.GET.get("page", 1))
+
+#     today = timezone.now().date()
+#     bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-date")
+
+#     # Filtering
+#     if filter_option:
+#         if filter_option == "today":
+#             bills_qs = bills_qs.filter(date=today)
+#         elif filter_option == "week":
+#             start_week = today - timedelta(days=today.weekday())
+#             bills_qs = bills_qs.filter(date__gte=start_week, date__lte=today)
+#         elif filter_option == "month":
+#             bills_qs = bills_qs.filter(date__year=today.year, date__month=today.month)
+#         elif filter_option == "year":
+#             bills_qs = bills_qs.filter(date__year=today.year)
+#         elif filter_option == "custom" and start_date and end_date:
+#             try:
+#                 start = datetime.strptime(start_date, "%Y-%m-%d").date()
+#                 end = datetime.strptime(end_date, "%Y-%m-%d").date()
+#                 bills_qs = bills_qs.filter(date__gte=start, date__lte=end)
+#             except ValueError:
+#                 pass
+
+#     # Pagination or All
+#     if view_mode == "all":
+#         bills = bills_qs
+#         page_obj = None
+#     else:
+#         paginator = Paginator(bills_qs, 20)
+#         page_obj = paginator.get_page(page)
+#         bills = page_obj.object_list
+
+#     # Totals
+#     total_bills = bills_qs.count()
+#     total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
+#     total_poojas = sum(bill.poojas.count() for bill in bills_qs)
+
+#     context = {
+#         "bills": bills,
+#         "total_bills": total_bills,
+#         "total_amount": total_amount,
+#         "total_poojas": total_poojas,
+#         "filter_option": filter_option or "",
+#         "start_date": start_date or "",
+#         "end_date": end_date or "",
+#         "page_obj": page_obj,
+#         "view_mode": view_mode or "",
+#     }
+#     return render(request, "billing/report.html", context)
+
 @login_required(login_url="login")
 def report_view(request):
     filter_option = request.GET.get("filter")
@@ -407,6 +464,7 @@ def report_view(request):
     end_date = request.GET.get("end_date")
     view_mode = request.GET.get("view")  
     page = int(request.GET.get("page", 1))
+    report_type = request.GET.get("report", "bill")  # default bill
 
     today = timezone.now().date()
     bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-date")
@@ -430,34 +488,61 @@ def report_view(request):
             except ValueError:
                 pass
 
-    # Pagination or All
-    if view_mode == "all":
-        bills = bills_qs
-        page_obj = None
+    # --- BILL REPORT ---
+    if report_type == "bill":
+        if view_mode == "all":
+            bills = bills_qs
+            page_obj = None
+        else:
+            paginator = Paginator(bills_qs, 20)
+            page_obj = paginator.get_page(page)
+            bills = page_obj.object_list
+
+        total_bills = bills_qs.count()
+        total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
+        total_poojas = sum(bill.poojas.count() for bill in bills_qs)
+
+        context = {
+            "report_type": "bill",
+            "bills": bills,
+            "total_bills": total_bills,
+            "total_amount": total_amount,
+            "total_poojas": total_poojas,
+            "filter_option": filter_option or "",
+            "start_date": start_date or "",
+            "end_date": end_date or "",
+            "page_obj": page_obj,
+            "view_mode": view_mode or "",
+        }
+
+    # --- PRODUCT REPORT ---
     else:
-        paginator = Paginator(bills_qs, 20)
-        page_obj = paginator.get_page(page)
-        bills = page_obj.object_list
+        from django.db.models import Count, F
+        # flatten all poojas sold in period
+        product_data = (
+            Pooja.objects.filter(billpooja__bill__in=bills_qs)
+            .values("id", "pooja_name", "price")
+            .annotate(quantity=Count("billpooja"), total=Sum("price"))
+            .order_by("pooja_name")
+        )
 
-    # Totals
-    total_bills = bills_qs.count()
-    total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
-    total_poojas = sum(bill.poojas.count() for bill in bills_qs)
+        total_products = product_data.count()
+        total_quantity = sum(p["quantity"] for p in product_data)
+        total_amount = sum(p["total"] for p in product_data)
 
-    context = {
-        "bills": bills,
-        "total_bills": total_bills,
-        "total_amount": total_amount,
-        "total_poojas": total_poojas,
-        "filter_option": filter_option or "",
-        "start_date": start_date or "",
-        "end_date": end_date or "",
-        "page_obj": page_obj,
-        "view_mode": view_mode or "",
-    }
+        context = {
+            "report_type": "product",
+            "products": product_data,
+            "total_products": total_products,
+            "total_quantity": total_quantity,
+            "total_amount": total_amount,
+            "filter_option": filter_option or "",
+            "start_date": start_date or "",
+            "end_date": end_date or "",
+            "view_mode": view_mode or "",
+        }
+
     return render(request, "billing/report.html", context)
-
-
 
 
 

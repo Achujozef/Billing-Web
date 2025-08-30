@@ -59,10 +59,22 @@
   <!-- Print Button -->
   <button class="btn btn-dark btn-sm" onclick="printReport()">🖨️ Print Report</button>
 </div>
+<div class="d-flex gap-2 mb-3">
+  <a href="?report=bill{% if filter_option %}&filter={{ filter_option }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+     class="btn btn-sm {% if report_type == 'bill' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+     Bill-wise Report
+  </a>
+
+  <a href="?report=product{% if filter_option %}&filter={{ filter_option }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+     class="btn btn-sm {% if report_type == 'product' %}btn-dark{% else %}btn-outline-dark{% endif %}">
+     Product-wise Report
+  </a>
+</div>
 
   <!-- Bill Table -->
    <div id="printArea">
   <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
+    {% if report_type == "bill" %}
     <table class="table table-hover mb-0">
       <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
         <tr>
@@ -105,13 +117,51 @@
 </tbody>
 
     </table>
-  </div>
+      </div>
   <!-- Totals for Print -->
   <div class="mt-3 fw-bold">
     <p>Total Bills: {{ total_bills }}</p>
     <p>Total Amount: ₹{{ total_amount }}</p>
     <p>Total Poojas: {{ total_poojas }}</p>
   </div>
+    {% endif %}
+    {% if report_type == "product" %}
+<div id="printArea">
+  <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Product (Pooja)</th>
+          <th>Quantity</th>
+          <th>Total Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ p.pooja_name }}</td>
+          <td>{{ p.quantity }}</td>
+          <td>₹{{ p.total }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center text-muted">No products found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="mt-3 fw-bold">
+    <p>Total Products: {{ total_products }}</p>
+    <p>Total Quantity: {{ total_quantity }}</p>
+    <p>Total Amount: ₹{{ total_amount }}</p>
+  </div>
+</div>
+{% endif %}
+
+
 </div>
 
 
