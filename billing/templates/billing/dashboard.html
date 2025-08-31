@@ -208,6 +208,46 @@
 
 
 
+<!-- put this <style> once in your page (for preview + print to look the same) -->
+<style id="receipt-style">
+  .receipt-wrap {
+    width: 21cm;           /* full A4 width */
+    height: 9.9cm;         /* 1/3 of A4 height */
+    border: 1px solid #0b3a8f;
+    padding: 6px;
+    box-sizing: border-box;
+    font-family: 'Noto Sans Malayalam', sans-serif;
+    margin: 0 auto;
+  }
+  .receipt-title { text-align:center; font-weight:800; color:#0b3a8f; font-size:16px; line-height:1.1; }
+  .receipt-sub { text-align:center; font-size:12px; margin-top:2px; color:#0b3a8f; }
+  .receipt-bar { margin:6px 0 4px; display:flex; justify-content:space-between; align-items:center; }
+  .receipt-heading { background:#0b3a8f; color:#fff; padding:2px 8px; border-radius:3px; font-weight:700; font-size:13px; letter-spacing:0.5px; }
+  .receipt-meta { font-size:12px; color:#0b3a8f; }
+  .receipt-grid { display:grid; grid-template-columns: 1fr 1fr; grid-gap:6px; }
+  .box { border:1px solid #0b3a8f; min-height:28px; padding:3px 5px; }
+  .label { position:relative; top:-8px; background:#fff; display:inline-block; padding:0 4px; color:#0b3a8f; font-size:12px; }
+  .items { width:100%; border-collapse:collapse; font-size:12px; margin-top:2px; }
+  .items th, .items td { border:1px solid #0b3a8f; padding:3px 4px; vertical-align:top; }
+  .items th { background:#eef3ff; color:#0b3a8f; }
+  .total-row { text-align:right; font-weight:700; margin-top:6px; color:#0b3a8f; font-size:13px; }
+  .sign { text-align:right; margin-top:14px; color:#0b3a8f; font-size:12px; }
+  .billno { font-weight:700; font-size:12px; color:#c51616; letter-spacing:0.5px; } /* small lettering */
+  @media print {
+    @page {
+      size: A4;
+      margin: 0.5cm;       /* top/side margins */
+    }
+    body {
+      margin: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .receipt-wrap {
+      margin-top: 0;       /* bill starts at top */
+    }
+  }
+</style>
 
 
 <style>
@@ -238,6 +278,76 @@
 </style>
 
 <script>
+const ORG = {
+  name_ml: "വെങ്കുളം ശ്രീസരസ്വതി ക്ഷേത്രം",    // change if needed
+  place_ml: "സരസ്വതിപുരം, ഇടവ",
+  phone: "9946538926",
+  volume: "2025"  // shown like your sample (Vol: 2025)
+};
+
+function makeBillNo(d=new Date()){
+  // YY MM DD HH(am/pm code) mm ss  -> ex: 25120304125956
+  let yy = String(d.getFullYear()).slice(-2);
+  let mm = String(d.getMonth()+1).padStart(2,"0");
+  let dd = String(d.getDate()).padStart(2,"0");
+  let hours = d.getHours(); // 0..23
+  let ap = hours < 12 ? "1" : "2";          // AM=1, PM=2
+  let h12 = hours % 12; if (h12 === 0) h12 = 12;
+  let hh = String(h12).padStart(2,"0");
+  let mi = String(d.getMinutes()).padStart(2,"0");
+  let ss = String(d.getSeconds()).padStart(2,"0");
+  return `${yy}${mm}${dd}${hh}${ap}${mi}${ss}`;
+}
+
+  function buildReceiptHTML({cust, nak, cart, createdAt}) {
+  const billNo = makeBillNo(createdAt);
+  const dateStr = createdAt.toLocaleDateString('en-GB'); // DD/MM/YYYY
+  const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+
+  const poojaRows = cart.map(p => `
+    <tr>
+      <td style="text-align:left;">${p.name}</td>
+      <td style="width:18%; text-align:center;">${p.qty}</td>
+      <td style="width:22%; text-align:right;">₹${(p.price*p.qty).toFixed(2)}</td>
+    </tr>
+  `).join("");
+
+  return `
+  <div class="receipt-wrap">
+    <div class="receipt-title">${ORG.name_ml}</div>
+    <div class="receipt-sub">${ORG.place_ml}, ഫോൺ : ${ORG.phone}</div>
+    <div class="receipt-bar">
+      <div class="receipt-meta">Vol : ${ORG.volume}&nbsp;&nbsp;<span class="billno">${billNo}</span></div>
+      <div class="receipt-heading">രസീത്</div>
+      <div class="receipt-meta">തീയതി : ${dateStr}</div>
+    </div>
+
+    <div class="receipt-grid">
+      <div class="box">
+        <span class="label">പേര്</span>
+        <div>${cust}</div>
+      </div>
+      <div class="box">
+        <span class="label">നക്ഷത്രം</span>
+        <div>${nak}</div>
+      </div>
+      <div class="box" style="grid-column:1 / span 2;">
+        <span class="label">വഴിപാടു വിവരം</span>
+        <table class="items">
+          <thead>
+            <tr><th style="text-align:left;">വഴിപാടു</th><th style="width:18%;">അളവ്</th><th style="width:22%;">തുക</th></tr>
+          </thead>
+          <tbody>${poojaRows}</tbody>
+        </table>
+        <div class="total-row">ആകെ തുക : ₹${total.toFixed(2)}</div>
+      </div>
+    </div>
+
+    <div class="sign">റീസിവർ- 9846076654</div>
+  </div>`;
+}
+
+
   let cart = [];
   
     function addProduct(id, name, price) {
@@ -295,129 +405,99 @@
     document.getElementById("balance").innerText = (paid - total).toFixed(2);
   }
 
-  function generateBill() {
-    let cust = document.getElementById("cust-name").value;
-    let nak = document.getElementById("nakshathra").value;
-    if (!cust || !nak || cart.length === 0) {
-      alert("Please fill all details and select products.");
-      return;
-    }
-
-    let total = cart.reduce((sum, p) => sum + p.price * p.qty, 0);
-    let billHtml = `
-      <div class="text-center mb-3">
-        <h3 class="fw-bold">Get Orgi Fresh</h3>
-        <p class="mb-1">Customer: <strong>${cust}</strong></p>
-        <p class="mb-1">Nakshathra: <strong>${nak}</strong></p>
-        <p class="mb-0">Date: ${new Date().toLocaleString()}</p>
-      </div>
-      <table class="table table-bordered table-sm">
-        <thead class="table-light">
-          <tr>
-            <th>Pooja</th>
-            <th>Price</th>
-            <th>Qty</th>
-            <th>Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${cart.map(p => `
-            <tr>
-              <td>${p.name}</td>
-              <td>₹${p.price}</td>
-              <td>${p.qty}</td>
-              <td>₹${p.price * p.qty}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th colspan="3" class="text-end">Total:</th>
-            <th>₹${total}</th>
-          </tr>
-        </tfoot>
-      </table>
-    `;
-    document.getElementById("bill-body").innerHTML = billHtml;
-
-    let billModal = new bootstrap.Modal(document.getElementById('billModal'));
-    billModal.show();
-
-    document.getElementById("saveBillBtn").onclick = function() {
-      fetch("{% url 'generate_bill' %}", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": "{{ csrf_token }}"
-        },
-        body: JSON.stringify({
-          customer_name: cust,
-          nakshathra: nak,
-          cart: cart.map((p,i) => ({id: p.id, name:p.name, price:p.price, qty:p.qty})),
-          total: total
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if(data.success){
-          cart = [];
-          renderCart();
-          billModal.hide();
-        } else {
-          alert("Error saving bill: " + data.error);
-        }
-      })
-      .catch(err => alert("AJAX Error: " + err));
-    };
+function generateBill() {
+  const cust = document.getElementById("cust-name").value.trim();
+  const nak  = document.getElementById("nakshathra").value.trim();
+  if (!cust || !nak || cart.length === 0) {
+    alert("Please fill all details and select products.");
+    return;
   }
+  const createdAt = new Date();
+  const html = buildReceiptHTML({cust, nak, cart, createdAt});
+  document.getElementById("bill-body").innerHTML = html;
 
-  {% comment %} function printBill() {
-    const cust = document.getElementById("cust-name").value;
-    const nak = document.getElementById("nakshathra").value;
+  // set Save button (same as your flow)
+  const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+  const billModal = new bootstrap.Modal(document.getElementById('billModal'));
+  billModal.show();
 
-    if (!cust || !nak || cart.length === 0) {
-      alert("Please fill all details and select products before printing.");
-      return;
-    }
-
-    const total = cart.reduce((sum, p) => sum + p.price * p.qty, 0);
-
-    // Save the bill first
+  document.getElementById("saveBillBtn").onclick = function () {
     fetch("{% url 'generate_bill' %}", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": "{{ csrf_token }}"
-      },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
       body: JSON.stringify({
         customer_name: cust,
         nakshathra: nak,
-        cart: cart.map((p,i) => ({id: i+1, name: p.name, price: p.price, qty: p.qty})),
+        bill_no: makeBillNo(createdAt),
+        datetime_iso: createdAt.toISOString(),
+        cart: cart.map(p => ({ id: p.id, name: p.name, price: p.price, qty: p.qty })),
         total: total
       })
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(r=>r.json()).then(data=>{
       if(data.success){
-
-
-        // Then print
-        const printContents = document.getElementById("bill-body").innerHTML;
-        const originalContents = document.body.innerHTML;
-        document.body.innerHTML = printContents;
-        window.print();
-        document.body.innerHTML = originalContents;
-
-        // Reset cart and calculator after printing
-        cart = [];
-        renderCart();
-      } else {
-        alert("Error saving bill: " + data.error);
-      }
+        cart = []; renderCart(); billModal.hide();
+      } else { alert("Error saving bill: " + data.error); }
     })
     .catch(err => alert("AJAX Error: " + err));
-  } {% endcomment %}
+  };
+}
 function printBill() {
+  const cust = document.getElementById("cust-name").value.trim();
+  const nak  = document.getElementById("nakshathra").value.trim();
+  if (!cust || !nak || cart.length === 0) {
+    alert("Please fill all details and select products before printing.");
+    return;
+  }
+
+  const createdAt = new Date();
+  const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+
+  fetch("{% url 'generate_bill' %}", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+    body: JSON.stringify({
+      customer_name: cust,
+      nakshathra: nak,
+      bill_no: makeBillNo(createdAt),
+      datetime_iso: createdAt.toISOString(),
+      cart: cart.map((p,i)=>({ id: p.id ?? (i+1), name: p.name, price: p.price, qty: p.qty })),
+      total: total
+    })
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    if(!data.success){ alert("Error saving bill: " + data.error); return; }
+
+    const html = buildReceiptHTML({cust, nak, cart, createdAt});
+    const css = document.getElementById("receipt-style").innerHTML;
+
+    const w = window.open('', '', 'width=900,height=650');
+    w.document.write(`
+      <html>
+        <head>
+          <title>Receipt</title>
+          <meta charset="utf-8">
+          <style>${css}</style>
+        </head>
+        <body>
+          <div class="receipt-container">${html}</div>
+        </body>
+      </html>
+    `);
+    w.document.close();
+    w.focus();
+    w.print();
+    w.close();
+
+    cart = [];
+    renderCart();
+  })
+  .catch(err => alert("AJAX Error: " + err));
+}
+
+
+{% comment %} function printBill() {
   const cust = document.getElementById("cust-name").value;
   const nak = document.getElementById("nakshathra").value;
 
@@ -543,7 +623,7 @@ function printBill() {
   // Reset the calculated total (optional, in case you want to reset the bill total)
   const calcTotal = document.getElementById("calc-total");
   if (calcTotal) calcTotal.innerText = "0";
-}
+} {% endcomment %}
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {

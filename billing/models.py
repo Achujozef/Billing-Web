@@ -92,7 +92,7 @@ class Bill(models.Model):
     date = models.DateField(auto_now_add=True)
     poojas = models.ManyToManyField(Pooja, through="BillPooja")
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-
+    bill_no = models.CharField(max_length=50, blank=True, null=True)
     def __str__(self):
         return f"Bill {self.id} - {self.customer_name} ({self.nakshathra})"
 

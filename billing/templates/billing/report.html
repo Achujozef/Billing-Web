@@ -71,8 +71,8 @@
   </a>
 </div>
 
-  <!-- Bill Table -->
-   <div id="printArea">
+<!-- PRINT AREA (single wrapper) -->
+<div id="printArea">
   <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
     {% if report_type == "bill" %}
     <table class="table table-hover mb-0">
@@ -87,83 +87,84 @@
         </tr>
       </thead>
       <tbody>
-  {% for bill in bills %}
-  <tr class="{% if bill.is_cycle %}table-dark{% endif %}">
-    <td>{{ bill.id }}</td>
-    <td>{{ bill.customer_name }}</td>
-    <td>{{ bill.nakshathra }}</td>
-    <td>{{ bill.date }}</td>
-    <td>₹{{ bill.total_amount }}</td>
-    <td>
-      {% if bill.is_cycle %}
-        <span class="badge bg-secondary">Cycle</span>
-      {% endif %}
-      <button class="btn btn-sm btn-outline-primary viewBillBtn" 
-              data-id="{{ bill.id }}" 
-              data-customer="{{ bill.customer_name }}"
-              data-nakshathra="{{ bill.nakshathra }}"
-              data-date="{{ bill.date }}"
-              data-amount="{{ bill.total_amount }}"
-              data-poojas='{% for p in bill.poojas.all %}{{ p.pooja_name }} (₹{{ p.price }}){% if not forloop.last %}, {% endif %}{% endfor %}'>
-        View
-      </button>
-    </td>
-  </tr>
-  {% empty %}
-  <tr>
-    <td colspan="6" class="text-center text-muted">No bills found.</td>
-  </tr>
-  {% endfor %}
-</tbody>
-
-    </table>
-      </div>
-  <!-- Totals for Print -->
-  <div class="mt-3 fw-bold">
-    <p>Total Bills: {{ total_bills }}</p>
-    <p>Total Amount: ₹{{ total_amount }}</p>
-    <p>Total Poojas: {{ total_poojas }}</p>
-  </div>
-    {% endif %}
-    {% if report_type == "product" %}
-<div id="printArea">
-  <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>#</th>
-          <th>Product (Pooja)</th>
-          <th>Quantity</th>
-          <th>Total Amount</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in products %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ p.pooja_name }}</td>
-          <td>{{ p.quantity }}</td>
-          <td>₹{{ p.total }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="text-center text-muted">No products found.</td>
-        </tr>
-        {% endfor %}
+      {% for bill in bills %}
+      <tr class="{% if bill.is_cycle %}table-dark{% endif %}">
+        <td>{{ bill.id }}</td>
+        <td>{{ bill.customer_name }}</td>
+        <td>{{ bill.nakshathra }}</td>
+        <td>{{ bill.date }}</td>
+        <td>₹{{ bill.total_amount }}</td>
+        <td>
+          {% if bill.is_cycle %}
+            <span class="badge bg-secondary">Cycle</span>
+          {% endif %}
+          <!-- Note: data-poojas format: "name (₹price), name2 (₹price)" as before -->
+          <button class="btn btn-sm btn-outline-primary viewBillBtn" 
+                  data-id="{{ bill.id }}" 
+                  data-customer="{{ bill.customer_name|escapejs }}"
+                  data-nakshathra="{{ bill.nakshathra|escapejs }}"
+                  data-date="{{ bill.date }}"
+                  data-amount="{{ bill.total_amount }}"
+                  data-bill_no="{{ bill.bill_no|default_if_none:'' }}"
+                  data-cycle="{{ bill.is_cycle|yesno:'true,false' }}"
+                  data-poojas='{% for p in bill.poojas.all %}{{ p.pooja_name }} (₹{{ p.price }}){% if not forloop.last %}, {% endif %}{% endfor %}'>
+            View
+          </button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="text-center text-muted">No bills found.</td>
+      </tr>
+      {% endfor %}
       </tbody>
     </table>
-  </div>
-  <div class="mt-3 fw-bold">
-    <p>Total Products: {{ total_products }}</p>
-    <p>Total Quantity: {{ total_quantity }}</p>
-    <p>Total Amount: ₹{{ total_amount }}</p>
+    </div>
+
+    <!-- Totals for Print -->
+    <div class="mt-3 fw-bold">
+      <p>Total Bills: {{ total_bills }}</p>
+      <p>Total Amount: ₹{{ total_amount }}</p>
+      <p>Total Poojas: {{ total_poojas }}</p>
+    </div>
+    {% endif %}
+
+    {% if report_type == "product" %}
+    <div class="table-responsive shadow-sm rounded-3 overflow-hidden">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Product (Pooja)</th>
+            <th>Quantity</th>
+            <th>Total Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in products %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ p.pooja_name }}</td>
+            <td>{{ p.quantity }}</td>
+            <td>₹{{ p.total }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="text-center text-muted">No products found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-3 fw-bold">
+      <p>Total Products: {{ total_products }}</p>
+      <p>Total Quantity: {{ total_quantity }}</p>
+      <p>Total Amount: ₹{{ total_amount }}</p>
+    </div>
+    {% endif %}
   </div>
 </div>
-{% endif %}
-
-
-</div>
-
+<!-- end printArea -->
 
   <!-- Pagination with Filter Preservation -->
   {% if page_obj %}
@@ -200,25 +201,20 @@
 
 </div>
 
-<!-- Bill Detail Modal -->
-<div class="modal fade" id="billDetailModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content rounded-4 shadow-lg">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title fw-bold" id="billModalLabel">Bill Details</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<!-- Bill Preview Modal (re-using dashboard modal & exact receipt styling) -->
+<div class="modal fade" id="billModal" tabindex="-1" aria-labelledby="billModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0 rounded-4" style="background:#ffffff;">
+      <div class="modal-header bg-dark text-white rounded-top-4">
+        <h5 class="modal-title fw-bold" id="billModalLabel">🧾 Bill Preview</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <p><strong>Customer:</strong> <span id="modalCustomer"></span></p>
-        <p><strong>Nakshathra:</strong> <span id="modalNakshathra"></span></p>
-        <p><strong>Date:</strong> <span id="modalDate"></span></p>
-        <p><strong>Total Amount:</strong> ₹<span id="modalAmount"></span></p>
-        <p><strong>Payment Type:</strong> <span id="modalPaymentType"></span></p>
-        <p><strong>Poojas:</strong> <span id="modalPoojas"></span></p>
+      <div class="modal-body" id="bill-body" style="max-height:500px; overflow-y:auto;">
+        <!-- Bill content generated by JS -->
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button class="btn btn-dark" onclick="window.print()">Print</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-dark" id="printBillBtn">Print</button>
       </div>
     </div>
   </div>
@@ -261,43 +257,230 @@ input[type="date"].date-btn:focus {
 }
 </style>
 
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  const billModal = new bootstrap.Modal(document.getElementById("billDetailModal"));
+<!-- RECEIPT STYLE (identical to dashboard, kept in this template) -->
+<style id="receipt-style">
+  .receipt-wrap {
+    width: 21cm;           /* full A4 width */
+    height: 9.9cm;         /* 1/3 of A4 height */
+    border: 1px solid #0b3a8f;
+    padding: 6px;
+    box-sizing: border-box;
+    font-family: 'Noto Sans Malayalam', sans-serif;
+    margin: 0 auto;
+    background: #fff;
+  }
+  .receipt-title { text-align:center; font-weight:800; color:#0b3a8f; font-size:16px; line-height:1.1; }
+  .receipt-sub { text-align:center; font-size:12px; margin-top:2px; color:#0b3a8f; }
+  .receipt-bar { margin:6px 0 4px; display:flex; justify-content:space-between; align-items:center; }
+  .receipt-heading { background:#0b3a8f; color:#fff; padding:2px 8px; border-radius:3px; font-weight:700; font-size:13px; letter-spacing:0.5px; }
+  .receipt-meta { font-size:12px; color:#0b3a8f; }
+  .receipt-grid { display:grid; grid-template-columns: 1fr 1fr; grid-gap:6px; }
+  .box { border:1px solid #0b3a8f; min-height:28px; padding:3px 5px; }
+  .label { position:relative; top:-8px; background:#fff; display:inline-block; padding:0 4px; color:#0b3a8f; font-size:12px; }
+  .items { width:100%; border-collapse:collapse; font-size:12px; margin-top:2px; }
+  .items th, .items td { border:1px solid #0b3a8f; padding:3px 4px; vertical-align:top; }
+  .items th { background:#eef3ff; color:#0b3a8f; }
+  .total-row { text-align:right; font-weight:700; margin-top:6px; color:#0b3a8f; font-size:13px; }
+  .sign { text-align:right; margin-top:14px; color:#0b3a8f; font-size:12px; }
+  .billno { font-weight:700; font-size:12px; color:#c51616; letter-spacing:0.5px; } /* small lettering */
+  @media print {
+    @page {
+      size: A4;
+      margin: 0.5cm;       /* top/side margins */
+    }
+    body {
+      margin: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .receipt-wrap {
+      margin-top: 0;       /* bill starts at top */
+    }
+  }
+</style>
 
-  document.querySelectorAll(".viewBillBtn").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      document.getElementById("modalCustomer").innerText = btn.dataset.customer;
-      document.getElementById("modalNakshathra").innerText = btn.dataset.nakshathra;
-      document.getElementById("modalDate").innerText = btn.dataset.date;
-      document.getElementById("modalAmount").innerText = btn.dataset.amount;
-      document.getElementById("modalPoojas").innerText = btn.dataset.poojas;
-      
-      // Set payment type based on cycle status
-      const isCycle = btn.dataset.cycle === 'true';
-      document.getElementById("modalPaymentType").innerHTML = isCycle 
-        ? '<span class="badge bg-secondary">Cycle Payment</span>' 
-        : '<span class="badge bg-success">Direct Payment</span>';
-      
+<script>
+// Organization data - same as dashboard
+const ORG = {
+  name_ml: "വെങ്കുളം ശ്രീസരസ്വതി ക്ഷേത്രം",
+  place_ml: "സരസ്വതിപുരം, ഇടവ",
+  phone: "9946538926",
+  volume: "2025"
+};
+
+// Helper: create bill number exactly as requested (YYMMDDHHapMMSS with AM=1 PM=2)
+function makeBillNo(d=new Date()){
+  let yy = String(d.getFullYear()).slice(-2);
+  let mm = String(d.getMonth()+1).padStart(2,"0");
+  let dd = String(d.getDate()).padStart(2,"0");
+  let hours = d.getHours(); // 0..23
+  let ap = hours < 12 ? "1" : "2";          // AM=1, PM=2
+  let h12 = hours % 12; if (h12 === 0) h12 = 12;
+  let hh = String(h12).padStart(2,"0");
+  let mi = String(d.getMinutes()).padStart(2,"0");
+  let ss = String(d.getSeconds()).padStart(2,"0");
+  return `${yy}${mm}${dd}${hh}${ap}${mi}${ss}`;
+}
+
+// Build receipt HTML (same structure as dashboard)
+function buildReceiptHTML({cust, nak, cart, createdAt, bill_no}) {
+  const created = createdAt ? new Date(createdAt) : new Date();
+  const billNo = bill_no || makeBillNo(created);
+  const dateStr = created.toLocaleDateString('en-GB'); // DD/MM/YYYY
+  const total = (cart || []).reduce((s,p)=>s + (parseFloat(p.price||0) * parseInt(p.qty||1)), 0);
+
+  const poojaRows = (cart || []).map(p => `
+    <tr>
+      <td style="text-align:left;">${p.name}</td>
+      <td style="width:18%; text-align:center;">${p.qty}</td>
+      <td style="width:22%; text-align:right;">₹${(parseFloat(p.price||0)*p.qty).toFixed(2)}</td>
+    </tr>
+  `).join("");
+
+  return `
+  <div class="receipt-wrap" role="document" aria-label="Receipt">
+    <div class="receipt-title">${ORG.name_ml}</div>
+    <div class="receipt-sub">${ORG.place_ml}, ഫോൺ : ${ORG.phone}</div>
+    <div class="receipt-bar">
+      <div class="receipt-meta">Vol : ${ORG.volume}&nbsp;&nbsp;<span class="billno">${billNo}</span></div>
+      <div class="receipt-heading">രസീത്</div>
+      <div class="receipt-meta">തീയതി : ${dateStr}</div>
+    </div>
+
+    <div class="receipt-grid">
+      <div class="box">
+        <span class="label">പേര്</span>
+        <div>${cust}</div>
+      </div>
+      <div class="box">
+        <span class="label">നക്ഷത്രം</span>
+        <div>${nak}</div>
+      </div>
+      <div class="box" style="grid-column:1 / span 2;">
+        <span class="label">വഴിപാടു വിവരം</span>
+        <table class="items">
+          <thead>
+            <tr><th style="text-align:left;">വഴിപാടു</th><th style="width:18%;">അളവ്</th><th style="width:22%;">തുക</th></tr>
+          </thead>
+          <tbody>${poojaRows}</tbody>
+        </table>
+        <div class="total-row">ആകെ തുക : ₹${total.toFixed(2)}</div>
+      </div>
+    </div>
+
+    <div class="sign">റീസിവർ- 9846076654</div>
+  </div>`;
+}
+
+// Parse a poojas text from backend into [{name, qty, price}, ...]
+// expected format per row: "Pooja A (₹100), Pooja B (₹50)" or just "Pooja A"
+function parsePoojasString(s) {
+  if (!s) return [];
+  return s.split(',').map(item => {
+    const txt = item.trim();
+    // match "name (₹123.45)" or "name (123)"
+    const m = txt.match(/^(.*?)\s*\(\s*₹?\s*([\d,\.]+)\s*\)\s*$/);
+    if (m) {
+      const name = m[1].trim();
+      const price = parseFloat(m[2].replace(/,/g,'')) || 0;
+      return { name, qty: 1, price };
+    } else if (txt.length) {
+      return { name: txt, qty: 1, price: 0 };
+    } else {
+      return null;
+    }
+  }).filter(Boolean);
+}
+
+// Toggle date inputs
+function toggleDateInput(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle("d-none");
+}
+
+// Print whole report area (improved: open new window and inject styles)
+function printReport(){
+  const printContents = document.getElementById("printArea").innerHTML;
+  // collect all stylesheets and inline styles from current page to preserve layout
+  const headContent = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+                    .map(node => node.outerHTML).join('\n');
+
+  const w = window.open('', '', 'width=900,height=650');
+  w.document.write(`
+    <html>
+      <head>
+        <meta charset="utf-8">
+        ${headContent}
+        <title>Report</title>
+        <style>
+          /* ensure A4-friendly printing defaults for the report */
+          @page { size: A4; margin: 1cm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0.5cm; }
+        </style>
+      </head>
+      <body>
+        ${printContents}
+      </body>
+    </html>
+  `);
+  w.document.close();
+  w.focus();
+  // small timeout to allow styles to load
+  setTimeout(()=> { w.print(); w.close(); }, 300);
+}
+
+// Modal & View button wiring
+document.addEventListener("DOMContentLoaded", function(){
+  const billModalEl = document.getElementById("billModal");
+  const billModal = new bootstrap.Modal(billModalEl);
+
+  // Attach click to all view buttons
+  document.querySelectorAll(".viewBillBtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const cust = btn.dataset.customer || '';
+      const nak  = btn.dataset.nakshathra || '';
+      const dateStr = btn.dataset.date || '';
+      // try to parse ISO-like date, fallback to now
+      let createdAt;
+      try { createdAt = dateStr ? new Date(dateStr) : new Date(); } catch(e) { createdAt = new Date(); }
+
+      const poojasRaw = btn.dataset.poojas || '';
+      const cart = parsePoojasString(poojasRaw);
+
+      // try to use server bill_no if present, otherwise generate one from createdAt
+      const bill_no = btn.dataset.bill_no || makeBillNo(createdAt);
+
+      // Build HTML using same builder used in dashboard
+      const html = buildReceiptHTML({ cust, nak, cart, createdAt, bill_no });
+
+      // Put into modal body and show
+      document.getElementById("bill-body").innerHTML = html;
       billModal.show();
     });
   });
+
+  // Print from modal (ensures same CSS used)
+  const printBtn = document.getElementById("printBillBtn");
+  printBtn && printBtn.addEventListener("click", function(){
+    const css = document.getElementById("receipt-style").innerHTML;
+    const html = document.getElementById("bill-body").innerHTML;
+    // open print window
+    const w = window.open('', '', 'width=900,height=650');
+    w.document.write(`
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Receipt</title>
+          <style>${css}</style>
+        </head>
+        <body>${html}</body>
+      </html>
+    `);
+    w.document.close();
+    w.focus();
+    // small delay to ensure content rendered
+    setTimeout(() => { w.print(); w.close(); }, 250);
+  });
 });
-</script>
-<script>
-function printReport() {
-  const printContents = document.getElementById("printArea").innerHTML;
-  const originalContents = document.body.innerHTML;
-  document.body.innerHTML = printContents;
-  window.print();
-  document.body.innerHTML = originalContents;
-  location.reload(); // reload back UI after print
-}
-</script>
-<script>
-  function toggleDateInput(id) {
-    const el = document.getElementById(id);
-    el.classList.toggle("d-none");
-  }
 </script>
 {% endblock %}

@@ -68,6 +68,7 @@ def generate_bill(request):
 
         customer_name = data.get("customer_name")
         nakshathra = data.get("nakshathra")
+        bill_no = data.get("bill_no")
         cart = data.get("cart", [])
 
         if not customer_name or not nakshathra or not cart:
@@ -81,7 +82,8 @@ def generate_bill(request):
             bill = Bill.objects.create(
                 customer_name=customer_name,
                 nakshathra=nakshathra,
-                total_amount=0  # will update later
+                total_amount=0,  # will update later
+                bill_no=bill_no
             )
 
             total_amount = 0
@@ -191,21 +193,32 @@ def subscription_list(request):
         elif selected_status == "Inactive":
             subscriptions = subscriptions.filter(is_active=False)
 
-    # Prepare subscriptions JSON for JS usage
     subs_json = []
     for sub in subscriptions:
-        # Calculate total days
+        # Total days
         total_days = (sub.end_date - sub.start_date).days + 1
-        
-        # Calculate total bill amount - convert Decimal to float
-        total_pooja_amount = sum(float(p.price) for p in sub.poojas.all())
+
+        # Bill calculations
+        pooja_list = list(sub.poojas.all())
+        total_pooja_amount = sum(float(p.price) for p in pooja_list)
         cycles = calculate_month_cycles(sub.start_date, sub.end_date)
         total_bill_amount = total_pooja_amount * cycles
-                
+
+        # Prepare bill breakdown rows
+        bill_items = []
+        for p in pooja_list:
+            bill_items.append({
+                "id": p.id,
+                "name": p.pooja_name,
+                "price": float(p.price),
+                "qty": cycles,
+                "amount": float(p.price) * cycles,
+            })
+
         subs_json.append({
             "id": sub.id,
             "customer": {
-                "name": sub.customer.name, 
+                "name": sub.customer.name,
                 "phone_number": sub.customer.phone_number or ""
             },
             "nakshathra": sub.nakshathra,
@@ -213,10 +226,15 @@ def subscription_list(request):
             "end_date": sub.end_date.isoformat(),
             "total_days": total_days,
             "total_bill_amount": round(total_bill_amount, 2),
-            "poojas": list(sub.poojas.values_list('id', flat=True)),
+            "poojas": [p.id for p in pooja_list],
+            "bill": {
+                "cycles": cycles,
+                "items": bill_items,
+                "total": round(total_bill_amount, 2),
+            }
         })
 
-    # Add calculated fields to subscription objects for template
+    # Add annotated fields for template use
     for sub in subscriptions:
         sub.total_days = (sub.end_date - sub.start_date).days + 1
         total_pooja_amount = sum(float(p.price) for p in sub.poojas.all())
@@ -224,14 +242,11 @@ def subscription_list(request):
         rounded_cycles = math.ceil(cycles)
         sub.total_bill_amount = round(total_pooja_amount * rounded_cycles, 2)
 
-    # Prepare poojas JSON - convert Decimal prices to float
-    poojas_json = []
-    for pooja in Pooja.objects.all():
-        poojas_json.append({
-            'id': pooja.id,
-            'pooja_name': pooja.pooja_name,
-            'price': float(pooja.price)  # Convert Decimal to float
-        })
+    # Prepare poojas JSON
+    poojas_json = [
+        {"id": p.id, "pooja_name": p.pooja_name, "price": float(p.price)}
+        for p in Pooja.objects.all()
+    ]
 
     return render(request, "billing/subscription_list.html", {
         "subscriptions": subscriptions,
@@ -243,7 +258,6 @@ def subscription_list(request):
         "poojas": Pooja.objects.all(),
         "customers": Customer.objects.all(),
     })
-
 @csrf_exempt
 def subscription_save(request):
     if request.method == "POST":
@@ -453,62 +467,6 @@ def mark_cycle_done(request):
             return JsonResponse({"success": False, "error": str(e)})
     return JsonResponse({"success": False, "error": "Invalid request"})
 
-# @login_required(login_url="login")
-# def report_view(request):
-#     filter_option = request.GET.get("filter")
-#     start_date = request.GET.get("start_date")
-#     end_date = request.GET.get("end_date")
-#     view_mode = request.GET.get("view")  
-#     page = int(request.GET.get("page", 1))
-
-#     today = timezone.now().date()
-#     bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-date")
-
-#     # Filtering
-#     if filter_option:
-#         if filter_option == "today":
-#             bills_qs = bills_qs.filter(date=today)
-#         elif filter_option == "week":
-#             start_week = today - timedelta(days=today.weekday())
-#             bills_qs = bills_qs.filter(date__gte=start_week, date__lte=today)
-#         elif filter_option == "month":
-#             bills_qs = bills_qs.filter(date__year=today.year, date__month=today.month)
-#         elif filter_option == "year":
-#             bills_qs = bills_qs.filter(date__year=today.year)
-#         elif filter_option == "custom" and start_date and end_date:
-#             try:
-#                 start = datetime.strptime(start_date, "%Y-%m-%d").date()
-#                 end = datetime.strptime(end_date, "%Y-%m-%d").date()
-#                 bills_qs = bills_qs.filter(date__gte=start, date__lte=end)
-#             except ValueError:
-#                 pass
-
-#     # Pagination or All
-#     if view_mode == "all":
-#         bills = bills_qs
-#         page_obj = None
-#     else:
-#         paginator = Paginator(bills_qs, 20)
-#         page_obj = paginator.get_page(page)
-#         bills = page_obj.object_list
-
-#     # Totals
-#     total_bills = bills_qs.count()
-#     total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
-#     total_poojas = sum(bill.poojas.count() for bill in bills_qs)
-
-#     context = {
-#         "bills": bills,
-#         "total_bills": total_bills,
-#         "total_amount": total_amount,
-#         "total_poojas": total_poojas,
-#         "filter_option": filter_option or "",
-#         "start_date": start_date or "",
-#         "end_date": end_date or "",
-#         "page_obj": page_obj,
-#         "view_mode": view_mode or "",
-#     }
-#     return render(request, "billing/report.html", context)
 
 @login_required(login_url="login")
 def report_view(request):
