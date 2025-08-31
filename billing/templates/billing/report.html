@@ -99,17 +99,19 @@
             <span class="badge bg-secondary">Cycle</span>
           {% endif %}
           <!-- Note: data-poojas format: "name (₹price), name2 (₹price)" as before -->
-          <button class="btn btn-sm btn-outline-primary viewBillBtn" 
-                  data-id="{{ bill.id }}" 
-                  data-customer="{{ bill.customer_name|escapejs }}"
-                  data-nakshathra="{{ bill.nakshathra|escapejs }}"
-                  data-date="{{ bill.date }}"
-                  data-amount="{{ bill.total_amount }}"
-                  data-bill_no="{{ bill.bill_no|default_if_none:'' }}"
-                  data-cycle="{{ bill.is_cycle|yesno:'true,false' }}"
-                  data-poojas='{% for p in bill.poojas.all %}{{ p.pooja_name }} (₹{{ p.price }}){% if not forloop.last %}, {% endif %}{% endfor %}'>
-            View
-          </button>
+<button 
+  class="viewBillBtn"
+  data-customer="{{ bill.customer_name }}"
+  data-nakshathra="{{ bill.nakshathra }}"
+  data-date="{{ bill.date }}"
+  data-bill_no="{{ bill.bill_no }}"
+  data-poojas='{% for bp in bill.billpooja_set.all %}
+    {"name": "{{ bp.pooja.pooja_name }}", "price": "{{ bp.pooja.price }}", "qty": "{{ bp.quantity }}"}{% if not forloop.last %},{% endif %}
+  {% endfor %}'
+>
+  View
+</button>
+
         </td>
       </tr>
       {% empty %}
@@ -376,20 +378,12 @@ function buildReceiptHTML({cust, nak, cart, createdAt, bill_no}) {
 // expected format per row: "Pooja A (₹100), Pooja B (₹50)" or just "Pooja A"
 function parsePoojasString(s) {
   if (!s) return [];
-  return s.split(',').map(item => {
-    const txt = item.trim();
-    // match "name (₹123.45)" or "name (123)"
-    const m = txt.match(/^(.*?)\s*\(\s*₹?\s*([\d,\.]+)\s*\)\s*$/);
-    if (m) {
-      const name = m[1].trim();
-      const price = parseFloat(m[2].replace(/,/g,'')) || 0;
-      return { name, qty: 1, price };
-    } else if (txt.length) {
-      return { name: txt, qty: 1, price: 0 };
-    } else {
-      return null;
-    }
-  }).filter(Boolean);
+  try {
+    return JSON.parse("[" + s + "]");
+  } catch (e) {
+    console.error("Parse error:", e, s);
+    return [];
+  }
 }
 
 // Toggle date inputs
