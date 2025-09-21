@@ -24,18 +24,8 @@ from django.db.models import Q, Sum
 from django.core.paginator import Paginator
 from django.utils.dateparse import parse_date
 # Local App Imports
-from .models import (
-    Pooja,
-    Subscription,
-    Customer,
-    Bill,
-    BillPooja,
-    NAKSHATHRA_CHOICES,
-    SubscriptionCycleHistory,
-    SubscriptionBill,
-
-)
-
+from .models import *
+from .forms import *
 @login_required(login_url="login")
 def dashboard(request):
     try:
@@ -695,3 +685,141 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+# ---------------- Festival Dashboard ----------------
+def festival_dashboard(request):
+    events = Event.objects.all()
+    festival_poojas = Pooja.objects.filter(festival_pooja=True)
+    bills = Bill.objects.filter(event_bookings__isnull=False).distinct()
+
+    # Check if this is an AJAX request
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # For example, return JSON for filtering
+        event_id = request.GET.get('event')
+        pooja_id = request.GET.get('pooja')
+        filtered_bills = bills
+        if event_id:
+            filtered_bills = filtered_bills.filter(event_bookings__event__id=event_id)
+        if pooja_id:
+            filtered_bills = filtered_bills.filter(event_bookings__poojas__id=pooja_id).distinct()
+        
+        return JsonResponse({
+            "success": True,
+            "bills": list(filtered_bills.values(
+                "id", "customer_name", "total_amount", "payment_status"
+            ))
+        })
+
+    return render(request, "festival_dashboard.html", {
+        "events": events,
+        "festival_poojas": festival_poojas,
+        "bills": bills,
+        "nakshathra_choices": Bill._meta.get_field('nakshathra').choices,
+    })
+
+
+# ---------------- Event CRUD ----------------
+def add_event(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        if name:
+            Event.objects.create(event_name=name)
+            messages.success(request, "Event added successfully!")
+            return redirect("festival_dashboard")
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def edit_event(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    if request.method == "POST":
+        name = request.POST.get("name")
+        if name:
+            event.event_name = name
+            event.save()
+            messages.success(request, "Event updated successfully!")
+            return redirect("festival_dashboard")
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def delete_event(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    event.delete()
+    messages.success(request, "Event deleted successfully!")
+    return redirect("festival_dashboard")
+
+
+
+# ---------------- Festival Pooja CRUD ----------------
+def add_festival_pooja(request):
+    if request.method == "POST":
+        form = FestivalPoojaForm(request.POST)
+        if form.is_valid():
+            pooja = form.save(commit=False)
+            pooja.festival_pooja = True
+            pooja.save()
+            messages.success(request, "Festival Pooja added successfully!")
+            return redirect("festival_dashboard")
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def edit_festival_pooja(request, pk):
+    pooja = get_object_or_404(Pooja, pk=pk)
+    if request.method == "POST":
+        form = FestivalPoojaForm(request.POST, instance=pooja)
+        if form.is_valid():
+            pooja = form.save(commit=False)
+            pooja.festival_pooja = True
+            pooja.save()
+            messages.success(request, "Festival Pooja updated successfully!")
+            return redirect("festival_dashboard")
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def delete_festival_pooja(request, pk):
+    pooja = get_object_or_404(Pooja, pk=pk)
+    pooja.delete()
+    messages.success(request, "Festival Pooja deleted successfully!")
+    return redirect("festival_dashboard")
+
+
+# ---------------- Festival Bill ----------------
+def create_festival_bill(request):
+    if request.method == "POST":
+        form = FestivalBillForm(request.POST)
+        if form.is_valid():
+            customer, _ = Customer.objects.get_or_create(
+                name=form.cleaned_data["customer_name"],
+                phone_number=form.cleaned_data.get("phone_number"),
+                defaults={"address": form.cleaned_data.get("address")},
+            )
+            bill = Bill.objects.create(
+                customer_name=customer.name,
+                nakshathra=form.cleaned_data["nakshathra"],
+                total_amount=0,
+                payment_status=form.cleaned_data.get("payment_status", False),
+            )
+
+            total = 0
+            for pooja in form.cleaned_data["poojas"]:
+                BillPooja.objects.create(bill=bill, pooja=pooja, quantity=1)
+                total += float(pooja.price)
+
+                EventBooking.objects.create(
+                    event=form.cleaned_data["event"],
+                    pooja=pooja,
+                    bill=bill,
+                    customer=customer,
+                )
+
+            bill.total_amount = total
+            bill.save()
+            messages.success(request, "Festival Bill created successfully!")
+            return redirect("festival_dashboard")
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+
+def print_festival_bill(request, bill_id):
+    bill = get_object_or_404(Bill, pk=bill_id)
+    return render(request, "print_festival_bill.html", {"bill": bill})

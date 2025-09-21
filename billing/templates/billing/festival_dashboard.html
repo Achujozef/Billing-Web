@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container mt-4">
+  <h2>🎉 Festival Billing</h2>
+
+  <!-- ================= Events ================= -->
+  <h4>
+    Events 
+    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addEventModal">+ Add</button>
+  </h4>
+  <ul>
+    {% for event in events %}
+        <li>{{ event.event_name }}
+            <a href="#" data-bs-toggle="modal" data-bs-target="#editEventModal{{ event.id }}">Edit</a>
+            <a href="{% url 'delete_event' event.id %}" class="text-danger">Delete</a>
+        </li>
+
+
+      <!-- Edit Event Modal -->
+      <div class="modal fade" id="editEventModal{{ event.id }}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form method="post" action="{% url 'edit_event' event.id %}">
+              {% csrf_token %}
+              <div class="modal-header">
+                <h5 class="modal-title">Edit Event</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label>Name</label>
+                  <input type="text" name="name" class="form-control" value="{{ event.name }}">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Update</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </ul>
+
+  <!-- Add Event Modal -->
+  <div class="modal fade" id="addEventModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{% url 'add_event' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Add Event</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label>Name</label>
+              <input type="text" name="name" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= Festival Poojas ================= -->
+  <h4>
+    Festival Poojas 
+    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addPoojaModal">+ Add</button>
+  </h4>
+  <ul>
+    {% for pooja in festival_poojas %}
+      <li>
+        {{ pooja.pooja_name }} - ₹{{ pooja.price }}
+        <a href="#" data-bs-toggle="modal" data-bs-target="#editPoojaModal{{ pooja.id }}">Edit</a>
+        <a href="{% url 'delete_festival_pooja' pooja.id %}" class="text-danger">Delete</a>
+      </li>
+
+      <!-- Edit Pooja Modal -->
+      <div class="modal fade" id="editPoojaModal{{ pooja.id }}" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <form method="post" action="{% url 'edit_festival_pooja' pooja.id %}">
+              {% csrf_token %}
+              <div class="modal-header">
+                <h5 class="modal-title">Edit Pooja</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label>Pooja Name</label>
+                  <input type="text" name="pooja_name" class="form-control" value="{{ pooja.pooja_name }}">
+                </div>
+                <div class="mb-3">
+                  <label>Price</label>
+                  <input type="number" step="0.01" name="price" class="form-control" value="{{ pooja.price }}">
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="submit" class="btn btn-success">Update</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </ul>
+
+  <!-- Add Pooja Modal -->
+  <div class="modal fade" id="addPoojaModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{% url 'add_festival_pooja' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Add Festival Pooja</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label>Pooja Name</label>
+              <input type="text" name="pooja_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label>Price</label>
+              <input type="number" step="0.01" name="price" class="form-control" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= Festival Bills ================= -->
+  <h4>
+    Festival Bills 
+    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addBillModal">+ Generate Bill</button>
+  </h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Customer</th>
+        <th>Event</th>
+        <th>Total</th>
+        <th>Payment</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for bill in bills %}
+        <tr>
+          <td>{{ bill.id }}</td>
+          <td>{{ bill.customer_name }}</td>
+          <td>{{ bill.festivalbookings.first.event.name }}</td>
+          <td>₹{{ bill.total_amount }}</td>
+          <td>{% if bill.payment_status %}✅ Paid{% else %}❌ Pending{% endif %}</td>
+          <td>
+            <a href="{% url 'print_festival_bill' bill.id %}" class="btn btn-sm btn-secondary">Print</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center">No Festival Bills</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+
+  <!-- Add Bill Modal -->
+  <div class="modal fade" id="addBillModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form method="post" action="{% url 'create_festival_bill' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Generate Festival Bill</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6">
+                <label>Event</label>
+                <select name="event" class="form-control" required>
+                  <option value="">-- Select --</option>
+                  {% for event in events %}
+                    <option value="{{ event.id }}">{{ event.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label>Poojas</label>
+                <select name="poojas" class="form-control" multiple required>
+                  {% for pooja in festival_poojas %}
+                    <option value="{{ pooja.id }}">{{ pooja.pooja_name }} (₹{{ pooja.price }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <hr>
+            <h6>Customer Info</h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label>Name</label>
+                <input type="text" name="customer_name" class="form-control" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Phone</label>
+                <input type="text" name="phone_number" class="form-control">
+              </div>
+              <div class="col-12 mb-3">
+                <label>Address</label>
+                <textarea name="address" class="form-control"></textarea>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Nakshathra</label>
+                <select name="nakshathra" class="form-control">
+                  <option value="">----</option>
+                  {% for code, label in bills.model._meta.get_field('nakshathra').choices %}
+                    <option value="{{ code }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Payment Done?</label><br>
+                <input type="checkbox" name="payment_status" value="true" checked>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Generate Bill</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

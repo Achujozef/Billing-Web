@@ -26,4 +26,24 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
 
+
+
+# ---------------- Festival Billing ----------------
+    path("festival/", views.festival_dashboard, name="festival_dashboard"),
+
+    # Event CRUD
+    path("festival/event/add/", views.add_event, name="add_event"),
+    path("festival/event/<int:pk>/edit/", views.edit_event, name="edit_event"),
+    path("festival/event/<int:pk>/delete/", views.delete_event, name="delete_event"),
+
+    # Festival Pooja CRUD
+    path("festival/pooja/add/", views.add_festival_pooja, name="add_festival_pooja"),
+    path("festival/pooja/<int:pk>/edit/", views.edit_festival_pooja, name="edit_festival_pooja"),
+    path("festival/pooja/<int:pk>/delete/", views.delete_festival_pooja, name="delete_festival_pooja"),
+
+    # Festival Bill
+    path("festival/bill/create/", views.create_festival_bill, name="create_festival_bill"),
+    path("festival/bill/<int:bill_id>/print/", views.print_festival_bill, name="print_festival_bill"),
+
+    
 ]

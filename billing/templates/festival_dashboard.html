@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static 'js/jquery.ime.js' %}"></script>
+<script src="{% static 'js/jquery.ime.selector.js' %}"></script>
+<script src="{% static 'js/jquery.ime.preferences.js' %}"></script>
+
+<div class="container mt-5">
+  <h2 class="mb-4">🎉 Festival Billing Dashboard</h2>
+
+  <!-- ================= Dashboard Cards ================= -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="card-title">Events</h5>
+          <p class="card-text">{{ events|length }} total</p>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEventModal">+ Add Event</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="card-title">Festival Poojas</h5>
+          <p class="card-text">{{ festival_poojas|length }} total</p>
+          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPoojaModal">+ Add Pooja</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="card-title">Festival Bills</h5>
+          <p class="card-text">{{ bills|length }} total</p>
+          <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addBillModal">+ Generate Bill</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= Event List ================= -->
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-header">
+      <h5>Events</h5>
+    </div>
+    <ul class="list-group list-group-flush">
+      {% for event in events %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ event.event_name }}
+          <span>
+            <a href="#" class="me-2" data-bs-toggle="modal" data-bs-target="#editEventModal{{ event.id }}">Edit</a>
+            <a href="{% url 'delete_event' event.id %}" class="text-danger">Delete</a>
+          </span>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-center">No Events Added</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- ================= Festival Poojas List ================= -->
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-header">
+      <h5>Festival Poojas</h5>
+    </div>
+    <ul class="list-group list-group-flush">
+      {% for pooja in festival_poojas %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ pooja.pooja_name }} - ₹{{ pooja.price }}
+          <span>
+            <a href="#" class="me-2" data-bs-toggle="modal" data-bs-target="#editPoojaModal{{ pooja.id }}">Edit</a>
+            <a href="{% url 'delete_festival_pooja' pooja.id %}" class="text-danger">Delete</a>
+          </span>
+        </li>
+      {% empty %}
+        <li class="list-group-item text-center">No Poojas Added</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- ================= Festival Bills Table ================= -->
+<!-- ================= Filter Bills ================= -->
+<div class="card mb-4 shadow-sm border-0">
+  <div class="card-header">
+    <h5>Filter Bills</h5>
+  </div>
+  <div class="card-body row">
+    <div class="col-md-4 mb-3">
+      <label>Event</label>
+      <select id="filterEvent" class="form-control">
+        <option value="">-- All Events --</option>
+        {% for event in events %}
+          <option value="{{ event.id }}">{{ event.event_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 mb-3">
+      <label>Pooja</label>
+      <select id="filterPooja" class="form-control">
+        <option value="">-- All Poojas --</option>
+        {% for pooja in festival_poojas %}
+          <option value="{{ pooja.id }}">{{ pooja.pooja_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 mb-3 d-flex align-items-end">
+      <button class="btn btn-primary" onclick="applyFilter()">Filter</button>
+      <button class="btn btn-secondary ms-2" onclick="resetFilter()">Reset</button>
+    </div>
+  </div>
+</div>
+
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header">
+      <h5>Festival Bills</h5>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Event</th>
+            <th>Total</th>
+            <th>Payment</th>
+            {% comment %} <th>Action</th> {% endcomment %}
+          </tr>
+        </thead>
+<tbody>
+  {% for bill in bills %}
+    {% with pooja_list=bill.event_bookings.first.poojas.all %}
+    <tr data-poojas="{{ pooja_list|join:',' }}">
+      <td>{{ bill.id }}</td>
+      <td>{{ bill.customer_name }}</td>
+      <td>
+        {% if bill.event_bookings.first %}
+          {{ bill.event_bookings.first.event.event_name }}
+        {% else %}-{% endif %}
+      </td>
+      <td>₹{{ bill.total_amount }}</td>
+      <td>{% if bill.payment_status %}✅ Paid{% else %}❌ Pending{% endif %}</td>
+      {% comment %} <td>
+        <button class="btn btn-sm btn-secondary" onclick="printFestivalBill({{ bill.id }})">Print</button>
+      </td> {% endcomment %}
+    </tr>
+    {% endwith %}
+  {% empty %}
+    <tr><td colspan="6" class="text-center">No Festival Bills</td></tr>
+  {% endfor %}
+</tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= Add/Edit Modals ================= -->
+  <!-- Add Event Modal -->
+  <div class="modal fade" id="addEventModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{% url 'add_event' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Add Event</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" name="name" class="form-control" placeholder="Event Name" required>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Pooja Modal -->
+  <div class="modal fade" id="addPoojaModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{% url 'add_festival_pooja' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Add Festival Pooja</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <input type="text" name="pooja_name" class="form-control mb-2" placeholder="Pooja Name" required>
+            <input type="number" step="0.01" name="price" class="form-control" placeholder="Price" required>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Bill Modal -->
+  <div class="modal fade" id="addBillModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="billForm">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Generate Festival Bill</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label>Event</label>
+                <select name="event" id="eventSelect" class="form-control" required>
+                  <option value="">-- Select --</option>
+                  {% for event in events %}
+                    <option value="{{ event.id }}">{{ event.event_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Poojas</label>
+                <select id="poojaSelect" class="form-control" multiple required>
+                  {% for pooja in festival_poojas %}
+                    <option value="{{ pooja.id }}" data-price="{{ pooja.price }}">{{ pooja.pooja_name }} (₹{{ pooja.price }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <hr>
+            <h6>Customer Info</h6>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label>Name</label>
+                <input type="text" id="cust-name" class="form-control malayalam-input" placeholder="Type in English for Malayalam">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Phone</label>
+                <input type="text" id="phone-number" class="form-control">
+              </div>
+              <div class="col-12 mb-3">
+                <label>Address</label>
+                <textarea id="address" class="form-control"></textarea>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Nakshathra</label>
+                <select id="nakshathra" class="form-control">
+                  <option value="">----</option>
+                  {% for code, label in nakshathra_choices %}
+                    <option value="{{ code }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6 mb-3 d-flex align-items-center">
+                <input type="checkbox" id="payment_status" checked>
+                <label class="ms-2 mb-0">Payment Done?</label>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" onclick="printFestivalBillTemp()">Generate & Print</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden CSS for Receipt -->
+<style id="receipt-style">
+  body { font-family: Arial, sans-serif; }
+  .receipt-container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ccc; }
+  h2, h4 { text-align: center; margin-bottom: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background-color: #f2f2f2; }
+  .total { text-align: right; font-weight: bold; margin-top: 10px; }
+</style>
+
+<script>
+// Malayalam IME setup
+$(document).ready(function() {
+    $('.malayalam-input').ime({ imePath: '{% static "js/jquery.ime.js" %}' });
+    $('.malayalam-input').ime('disable');
+    $('.malayalam-input').on('focus', function() {
+        $(this).ime('enable');
+        $(this).ime('setLanguage', 'ml');
+        $(this).ime('setIM', 'itrans');
+    });
+});
+
+// Temporary cart
+let cart = [];
+function buildCart() {
+  cart = [];
+  $('#poojaSelect option:selected').each(function() {
+    cart.push({ id: $(this).val(), name: $(this).text(), price: parseFloat($(this).data('price')), qty: 1 });
+  });
+}
+
+// Generate printable bill
+function printFestivalBillTemp() {
+  const cust = $('#cust-name').val().trim();
+  const nak  = $('#nakshathra').val().trim();
+  if (!cust || !nak) { alert("Fill all details"); return; }
+
+  buildCart();
+  if (cart.length === 0) { alert("Select poojas"); return; }
+
+  const createdAt = new Date();
+  const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+
+  // Build receipt HTML
+  let html = `
+    <h2>Festival Receipt</h2>
+    <p><strong>Name:</strong> ${cust}</p>
+    <p><strong>Nakshathra:</strong> ${nak}</p>
+    <p><strong>Date:</strong> ${createdAt.toLocaleString()}</p>
+    <table>
+      <thead><tr><th>Pooja</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+      <tbody>
+  `;
+  cart.forEach(p => {
+    html += `<tr><td>${p.name}</td><td>${p.qty}</td><td>₹${p.price}</td><td>₹${p.price*p.qty}</td></tr>`;
+  });
+  html += `</tbody></table><p class="total">Total: ₹${total}</p>`;
+
+  const w = window.open('', '', 'width=900,height=650');
+  w.document.write(`<html><head><title>Receipt</title><meta charset="utf-8"><style>${document.getElementById('receipt-style').innerHTML}</style></head><body><div class="receipt-container">${html}</div></body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
+  w.close();
+}
+</script>
+<script>
+function applyFilter() {
+    const eventId = document.getElementById('filterEvent').value;
+    const poojaId = document.getElementById('filterPooja').value;
+
+    const rows = document.querySelectorAll('table tbody tr');
+
+    rows.forEach(row => {
+        // Skip if empty table row
+        if(row.querySelector('td').colSpan) return;
+
+        const eventName = row.cells[2].innerText.trim();
+        const poojaName = row.cells[3].dataset.poojas?.split(',') || [];
+
+        let eventMatch = !eventId || eventName == document.querySelector(`#filterEvent option[value="${eventId}"]`).text;
+        let poojaMatch = !poojaId || poojaName.includes(document.querySelector(`#filterPooja option[value="${poojaId}"]`).text);
+
+        row.style.display = (eventMatch && poojaMatch) ? '' : 'none';
+    });
+}
+
+function resetFilter() {
+    document.getElementById('filterEvent').value = '';
+    document.getElementById('filterPooja').value = '';
+    applyFilter();
+}
+
+</script>
+{% endblock %}
