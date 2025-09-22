@@ -688,28 +688,44 @@ def logout_view(request):
 
 
 # ---------------- Festival Dashboard ----------------
+from django.http import JsonResponse
+
 def festival_dashboard(request):
     events = Event.objects.all()
     festival_poojas = Pooja.objects.filter(festival_pooja=True)
     bills = Bill.objects.filter(event_bookings__isnull=False).distinct()
 
-    # Check if this is an AJAX request
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        # For example, return JSON for filtering
         event_id = request.GET.get('event')
         pooja_id = request.GET.get('pooja')
+        payment_status = request.GET.get('payment')
+
         filtered_bills = bills
+
         if event_id:
             filtered_bills = filtered_bills.filter(event_bookings__event__id=event_id)
         if pooja_id:
-            filtered_bills = filtered_bills.filter(event_bookings__poojas__id=pooja_id).distinct()
-        
-        return JsonResponse({
-            "success": True,
-            "bills": list(filtered_bills.values(
-                "id", "customer_name", "total_amount", "payment_status"
-            ))
-        })
+            filtered_bills = filtered_bills.filter(event_bookings__pooja__id=pooja_id).distinct()
+        if payment_status:
+            if payment_status == 'paid':
+                filtered_bills = filtered_bills.filter(payment_status=True)
+            elif payment_status == 'pending':
+                filtered_bills = filtered_bills.filter(payment_status=False)
+
+        data = []
+        for bill in filtered_bills:
+            pooja_list = [eb.pooja.pooja_name for eb in bill.event_bookings.all()]
+            data.append({
+                'id': bill.id,
+                'customer_name': bill.customer_name,
+                'event_name': bill.event_bookings.first().event.event_name if bill.event_bookings.first() else '',
+                'total_amount': bill.total_amount,
+                'payment_status': 'Paid' if bill.payment_status else 'Pending',
+                'poojas': pooja_list
+            })
+
+
+        return JsonResponse({'bills': data})
 
     return render(request, "festival_dashboard.html", {
         "events": events,
@@ -782,42 +798,58 @@ def delete_festival_pooja(request, pk):
     messages.success(request, "Festival Pooja deleted successfully!")
     return redirect("festival_dashboard")
 
-
-# ---------------- Festival Bill ----------------
 def create_festival_bill(request):
-    if request.method == "POST":
+    if request.method == "POST" and request.headers.get('x-requested-with') == 'XMLHttpRequest':
         form = FestivalBillForm(request.POST)
         if form.is_valid():
-            customer, _ = Customer.objects.get_or_create(
-                name=form.cleaned_data["customer_name"],
-                phone_number=form.cleaned_data.get("phone_number"),
-                defaults={"address": form.cleaned_data.get("address")},
-            )
-            bill = Bill.objects.create(
-                customer_name=customer.name,
-                nakshathra=form.cleaned_data["nakshathra"],
-                total_amount=0,
-                payment_status=form.cleaned_data.get("payment_status", False),
-            )
-
-            total = 0
-            for pooja in form.cleaned_data["poojas"]:
-                BillPooja.objects.create(bill=bill, pooja=pooja, quantity=1)
-                total += float(pooja.price)
-
-                EventBooking.objects.create(
-                    event=form.cleaned_data["event"],
-                    pooja=pooja,
-                    bill=bill,
-                    customer=customer,
+            try:
+                customer, _ = Customer.objects.get_or_create(
+                    name=form.cleaned_data["customer_name"],
+                    phone_number=form.cleaned_data.get("phone_number"),
+                    defaults={"address": form.cleaned_data.get("address")},
+                )
+                bill = Bill.objects.create(
+                    customer_name=customer.name,
+                    nakshathra=form.cleaned_data["nakshathra"],
+                    total_amount=0,
+                    payment_status=form.cleaned_data.get("payment_status", False),
                 )
 
-            bill.total_amount = total
-            bill.save()
-            messages.success(request, "Festival Bill created successfully!")
-            return redirect("festival_dashboard")
+                total = 0
+                for pooja in form.cleaned_data["poojas"]:
+                    BillPooja.objects.create(bill=bill, pooja=pooja, quantity=1)
+                    total += float(pooja.price)
 
-    return JsonResponse({"error": "Invalid request"}, status=400)
+                    EventBooking.objects.create(
+                        event=form.cleaned_data["event"],
+                        pooja=pooja,
+                        bill=bill,
+                        customer=customer,
+                    )
+
+                bill.total_amount = total
+                bill.save()
+
+                return JsonResponse({
+                    "success": True,
+                    "created_at": timezone.now().isoformat()
+                })
+
+            except Exception as e:
+                print("SERVER ERROR:", e)
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Server error: {str(e)}"
+                }, status=500)
+
+        else:
+            # Print form errors to console for debugging
+            print("FORM VALIDATION ERROR:", form.errors.as_json())
+            errors = form.errors.as_json()
+            return JsonResponse({"success": False, "error": "Invalid form data", "details": errors}, status=400)
+
+    print("INVALID REQUEST METHOD OR NOT AJAX")
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
 
 
 def print_festival_bill(request, bill_id):
