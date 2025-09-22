@@ -179,14 +179,14 @@
       <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
         📊 Dashboard
       </a>
-      <a href="{% url 'festival_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'festival_dashboard' %}active{% endif %}">
-        🎉 Festival Billing
-      </a>
       <a href="{% url 'pooja_list' %}" class="nav-link {% if request.resolver_match.url_name == 'pooja_list' %}active{% endif %}">
         🙏 Poojas
       </a>
       <a href="{% url 'subscription_list' %}" class="nav-link {% if request.resolver_match.url_name == 'subscription_list' %}active{% endif %}">
         📜 Subscription
+      </a>
+      <a href="{% url 'festival_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'festival_dashboard' %}active{% endif %}">
+        🎉 Festival Billing
       </a>
       <a href="{% url 'report_view' %}" class="nav-link {% if request.resolver_match.url_name == 'report_view' %}active{% endif %}">
         📑 Report
