@@ -104,6 +104,7 @@
   data-customer="{{ bill.customer_name }}"
   data-nakshathra="{{ bill.nakshathra }}"
   data-date="{{ bill.date }}"
+  data-bill_id="{{ bill.id }}"
   data-bill_no="{{ bill.bill_no }}"
   data-poojas='{% for bp in bill.billpooja_set.all %}
     {"name": "{{ bp.pooja.pooja_name }}", "price": "{{ bp.pooja.price }}", "qty": "{{ bp.quantity }}"}{% if not forloop.last %},{% endif %}
@@ -111,6 +112,7 @@
 >
   View
 </button>
+
 
         </td>
       </tr>
@@ -442,7 +444,9 @@ document.addEventListener("DOMContentLoaded", function(){
       const cart = parsePoojasString(poojasRaw);
 
       // try to use server bill_no if present, otherwise generate one from createdAt
-      const bill_no = btn.dataset.bill_no || makeBillNo(createdAt);
+      // Prefer backend bill_no, otherwise fall back to DB id, then fallback to generated
+      const bill_no = btn.dataset.bill_id;
+
 
       // Build HTML using same builder used in dashboard
       const html = buildReceiptHTML({ cust, nak, cart, createdAt, bill_no });
