@@ -5,7 +5,7 @@ import unicodedata
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from django.db.models import Sum, Count, Avg, Max, Min,F
-
+from django.views.decorators.http import require_POST
 # Third-Party
 import requests
 from dateutil.relativedelta import relativedelta
@@ -855,3 +855,16 @@ def create_festival_bill(request):
 def print_festival_bill(request, bill_id):
     bill = get_object_or_404(Bill, pk=bill_id)
     return render(request, "print_festival_bill.html", {"bill": bill})
+
+@require_POST
+def toggle_payment_status(request, bill_id):
+    bill = get_object_or_404(Bill, id=bill_id)
+    action = request.POST.get("action")
+
+    if action == "mark_paid":
+        bill.payment_status = True
+    elif action == "mark_unpaid":
+        bill.payment_status = False
+    
+    bill.save()
+    return JsonResponse({"success": True, "status": "Paid" if bill.payment_status else "Pending"})

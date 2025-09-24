@@ -220,7 +220,22 @@
         {% else %}-{% endif %}
       </td>
       <td>₹{{ bill.total_amount }}</td>
-      <td>{% if bill.payment_status %}✅ Paid{% else %}❌ Pending{% endif %}</td>
+      <td>
+        {% if bill.payment_status %}
+          <span class="badge bg-success">✅ Paid</span>
+          <button class="btn btn-sm btn-outline-danger toggle-payment"
+                  data-id="{{ bill.id }}" data-action="mark_unpaid">
+            Mark as Unpaid
+          </button>
+        {% else %}
+          <span class="badge bg-warning text-dark">❌ Pending</span>
+          <button class="btn btn-sm btn-outline-success toggle-payment"
+                  data-id="{{ bill.id }}" data-action="mark_paid">
+            Mark as Paid
+          </button>
+        {% endif %}
+      </td>
+
     </tr>
     {% endwith %}
   {% empty %}
@@ -390,6 +405,33 @@
   </div>
 </div>
 
+<!-- ================= Payment Confirmation Modal ================= -->
+<div class="modal fade" id="paymentConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="paymentConfirmForm">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Confirm Payment</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Please enter the bill amount to confirm payment status change:</p>
+          <input type="number" id="enteredAmount" class="form-control" required placeholder="Enter bill amount">
+          <input type="hidden" id="billId">
+          <input type="hidden" id="billAmount">
+          <input type="hidden" id="billAction">
+          <div class="invalid-feedback">Amount is required</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
 </div>
 
 <style id="receipt-style">
@@ -474,16 +516,35 @@ function applyFilter() {
 
             response.bills.forEach(bill => {
                 const poojas = bill.poojas.join(', ');
-                const payment = bill.payment_status === 'Paid' ? '✅ Paid' : '❌ Pending';
+                let paymentHtml = '';
+                if (bill.payment_status === 'Paid') {
+                    paymentHtml = `
+                        <span class="badge bg-success">✅ Paid</span>
+                        <button class="btn btn-sm btn-outline-danger toggle-payment"
+                                data-id="${bill.id}" data-action="mark_unpaid">
+                            Mark as Unpaid
+                        </button>
+                    `;
+                } else {
+                    paymentHtml = `
+                        <span class="badge bg-warning text-dark">❌ Pending</span>
+                        <button class="btn btn-sm btn-outline-success toggle-payment"
+                                data-id="${bill.id}" data-action="mark_paid">
+                            Mark as Paid
+                        </button>
+                    `;
+                }
+
                 const row = `
                     <tr data-poojas="${poojas}">
                         <td>${bill.id}</td>
                         <td>${bill.customer_name}</td>
                         <td>${bill.event_name}</td>
                         <td>₹${bill.total_amount}</td>
-                        <td>${payment}</td>
+                        <td>${paymentHtml}</td>
                     </tr>
                 `;
+
                 tbody.append(row);
             });
         },
@@ -690,4 +751,59 @@ function generateAndPrint() {
     });
 }
 </script>
+<script>
+$(document).on("click", ".toggle-payment", function () {
+    const billId = $(this).data("id");
+    const action = $(this).data("action"); // mark_paid / mark_unpaid
+    const row = $(this).closest("tr");
+    const amount = row.find("td:nth-child(4)").text().replace("₹", "").trim();
+
+    // Fill modal hidden fields
+    $("#billId").val(billId);
+    $("#billAmount").val(amount);
+    $("#billAction").val(action);
+    $("#enteredAmount").val("");
+
+    // Show modal
+    $("#paymentConfirmModal").modal("show");
+});
+$("#paymentConfirmForm").on("submit", function (e) {
+    e.preventDefault();
+
+    const entered = parseFloat($("#enteredAmount").val());
+    const correct = parseFloat($("#billAmount").val());
+    const billId = $("#billId").val();
+    const action = $("#billAction").val();
+
+    if (entered !== correct) {
+        alert("❌ Amount mismatch! Please try again.");
+        return;
+    }
+
+    // ✅ Proceed with AJAX request (correct URL + data)
+    $.ajax({
+        url: `/bill/${billId}/toggle-payment/`,
+        method: "POST",
+        data: {
+            action: action,
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        success: function (response) {
+            $("#paymentConfirmModal").modal("hide");
+
+            // if you want to refresh only filtered table:
+            if (typeof applyFilter === "function") {
+                applyFilter();
+            } else {
+                location.reload();
+            }
+        },
+        error: function () {
+            alert("⚠️ Error updating payment status. Try again.");
+        }
+    });
+});
+
+</script>
+
 {% endblock %}

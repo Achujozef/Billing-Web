@@ -45,5 +45,6 @@ urlpatterns = [
     path("festival/bill/create/", views.create_festival_bill, name="create_festival_bill"),
     path("festival/bill/<int:bill_id>/print/", views.print_festival_bill, name="print_festival_bill"),
 
-    
+    path("bill/<int:bill_id>/toggle-payment/", views.toggle_payment_status, name="toggle_payment_status"),
+
 ]
