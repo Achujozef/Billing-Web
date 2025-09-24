@@ -40,6 +40,7 @@ def dashboard(request):
         "current_time": datetime.now().strftime("%H:%M:%S"),
         "poojas": poojas,
         "NAKSHATHRA_CHOICES": NAKSHATHRA_CHOICES,
+        "family_indices": list(range(8)),
     }
     return render(request, "billing/dashboard.html", context)
 
@@ -111,6 +112,86 @@ def generate_bill(request):
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
+
+
+@csrf_exempt
+def generate_family_bill(request):
+    """
+    Handles family bill creation with multiple poojas and multiple family members.
+    """
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+
+        bill_no = data.get("bill_no")
+        cart = data.get("cart", [])  # list of poojas with qty
+        members = data.get("members", [])  # list of family members: {name, nakshathra, customer_id(optional)}
+
+        if not cart or not members:
+            return JsonResponse({"success": False, "error": "Cart and members are required"}, status=400)
+
+        # validate nakshathras
+        valid_nakshathras = dict(NAKSHATHRA_CHOICES)
+        for m in members:
+            if m.get("nakshathra") not in valid_nakshathras:
+                return JsonResponse({"success": False, "error": f"Invalid Nakshathra for member {m.get('name')}"}, status=400)
+
+        with transaction.atomic():
+            # create main bill (customer_name can be head-of-family or summary)
+            bill = Bill.objects.create(
+                customer_name=f"Family Bill - {members[0]['name']}",  # first member or any label
+                nakshathra="",  # blank for family bill
+                total_amount=0,
+                bill_no=bill_no
+            )
+
+            total_amount = 0
+            # create BillPooja entries
+            for item in cart:
+                pooja_id = item.get("id")
+                qty = int(item.get("qty", 1))
+                if qty <= 0:
+                    continue
+                try:
+                    pooja = Pooja.objects.get(id=pooja_id)
+                except Pooja.DoesNotExist:
+                    continue
+                subtotal = pooja.price * qty
+                total_amount += subtotal
+                BillPooja.objects.create(bill=bill, pooja=pooja, quantity=qty)
+
+            # create FamilyBillMember entries
+            for m in members:
+                customer_obj = None
+                customer_id = m.get("customer_id")
+                if customer_id:
+                    try:
+                        customer_obj = Customer.objects.get(id=customer_id)
+                    except Customer.DoesNotExist:
+                        customer_obj = None
+
+                FamilyBillMember.objects.create(
+                    bill=bill,
+                    customer=customer_obj,
+                    name=m.get("name", "Unknown"),
+                    nakshathra=m.get("nakshathra", "")
+                )
+
+            # update total_amount in Bill
+            bill.total_amount = total_amount
+            bill.save()
+
+        return JsonResponse({"success": True, "bill_id": bill.id})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+    
 
     
 @login_required(login_url="login")
@@ -490,18 +571,26 @@ def report_view(request):
                 pass
 
     # --- BILL REPORT ---
+    # --- BILL REPORT ---
     if report_type == "bill":
-        if view_mode == "all":
-            bills = bills_qs
-            page_obj = None
-        else:
-            paginator = Paginator(bills_qs, 20)
-            page_obj = paginator.get_page(page)
-            bills = page_obj.object_list
+        bills = bills_qs if view_mode == "all" else Paginator(bills_qs, 20).get_page(page).object_list
+        page_obj = None if view_mode == "all" else Paginator(bills_qs, 20).get_page(page)
+
+        # Preload family members to avoid N+1 queries
+        bills = bills.prefetch_related("family_members__customer", "billpooja_set__pooja")
 
         total_bills = bills_qs.count()
         total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
         total_poojas = sum(bill.poojas.count() for bill in bills_qs)
+
+        # Prepare family members display
+        for bill in bills:
+            family_list = []
+            for member in bill.family_members.all():
+                name = member.customer.name if member.customer else member.name
+                nak = member.nakshathra
+                family_list.append(f"{name} ({nak})")
+            bill.family_display = ", ".join(family_list) if family_list else f"{bill.customer_name} ({bill.nakshathra})"
 
         context = {
             "report_type": "bill",
@@ -515,6 +604,7 @@ def report_view(request):
             "page_obj": page_obj,
             "view_mode": view_mode or "",
         }
+
 
     # --- PRODUCT REPORT ---
     else:

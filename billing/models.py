@@ -146,3 +146,13 @@ class EventBooking(models.Model):   # ✅ NEW
 
     def __str__(self):
         return f"{self.event.event_name} → {self.pooja.pooja_name} (Bill {self.bill.id})"
+    
+
+class FamilyBillMember(models.Model):
+    bill = models.ForeignKey(Bill, on_delete=models.CASCADE, related_name="family_members")
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=200)   # in case customer record is not created
+    nakshathra = models.CharField(max_length=50, choices=NAKSHATHRA_CHOICES, default="")
+
+    def __str__(self):
+        return f"Bill {self.bill.id} → {self.name} ({self.nakshathra})"

@@ -4,7 +4,7 @@ from . import views
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("generate-bill/", views.generate_bill, name="generate_bill"),
-
+    path('generate-family-bill/', views.generate_family_bill, name='generate_family_bill'),  
 
     path("poojas/", views.pooja_list, name="pooja_list"),
     path("poojas/save/", views.save_pooja, name="save_pooja"),  # Add/Edit via AJAX
