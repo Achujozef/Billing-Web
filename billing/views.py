@@ -159,9 +159,10 @@ def generate_family_bill(request):
                     pooja = Pooja.objects.get(id=pooja_id)
                 except Pooja.DoesNotExist:
                     continue
+                final_qty = qty * len(members)
                 subtotal = pooja.price * qty
                 total_amount += subtotal
-                BillPooja.objects.create(bill=bill, pooja=pooja, quantity=qty)
+                BillPooja.objects.create(bill=bill, pooja=pooja, quantity=final_qty)
 
             # create FamilyBillMember entries
             for m in members:
