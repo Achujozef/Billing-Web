@@ -587,12 +587,18 @@ def report_view(request):
 
         # Prepare family members display
         for bill in bills:
+            bill.is_family = bill.family_members.exists()
             family_list = []
             for member in bill.family_members.all():
-                name = member.customer.name if member.customer else member.name
-                nak = member.nakshathra
-                family_list.append(f"{name} ({nak})")
-            bill.family_display = ", ".join(family_list) if family_list else f"{bill.customer_name} ({bill.nakshathra})"
+                if member.customer:
+                    name = member.customer.name
+                    nak = member.customer.nakshathra or member.nakshathra
+                else:
+                    name = member.name
+                    nak = member.nakshathra
+                family_list.append({"name": name, "nakshathra": nak})
+            bill.family_data = family_list
+            bill.family_display = ", ".join([f"{m['name']} ({m['nakshathra']})" for m in family_list]) if family_list else f"{bill.customer_name} ({bill.nakshathra})"
 
         context = {
             "report_type": "bill",
@@ -606,7 +612,6 @@ def report_view(request):
             "page_obj": page_obj,
             "view_mode": view_mode or "",
         }
-
 
     # --- PRODUCT REPORT ---
     else:
@@ -635,7 +640,6 @@ def report_view(request):
             "end_date": end_date or "",
             "view_mode": view_mode or "",
         }
-
 
     return render(request, "billing/report.html", context)
 

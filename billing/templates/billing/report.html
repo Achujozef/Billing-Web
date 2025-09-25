@@ -90,8 +90,21 @@
       {% for bill in bills %}
       <tr class="{% if bill.is_cycle %}table-dark{% endif %}">
         <td>{{ bill.id }}</td>
-        <td>{{ bill.customer_name }}</td>
-        <td>{{ bill.nakshathra }}</td>
+         <!-- Customer Name -->
+          <td>
+            {% if bill.is_family and bill.family_data %}
+              {{ bill.family_data.0.name }}
+            {% else %}
+              {{ bill.customer_name }}
+            {% endif %}
+          </td>
+          <td>
+            {% if bill.is_family and bill.family_data %}
+              {{ bill.family_data.0.nakshathra }}
+            {% else %}
+              {{ bill.nakshathra }}
+            {% endif %}
+          </td>
         <td>{{ bill.date }}</td>
         <td>₹{{ bill.total_amount }}</td>
         <td>
@@ -99,7 +112,7 @@
             <span class="badge bg-secondary">Cycle</span>
           {% endif %}
           <!-- Note: data-poojas format: "name (₹price), name2 (₹price)" as before -->
-<button 
+{% comment %} <button 
   class="viewBillBtn"
   data-customer="{{ bill.customer_name }}"
   data-nakshathra="{{ bill.nakshathra }}"
@@ -112,7 +125,35 @@
   {% endfor %}'
 >
   View
+</button> {% endcomment %}
+<button 
+  class="viewBillBtn"
+  data-is_family="{{ bill.is_family|yesno:'true,false' }}"
+  data-customer="{{ bill.customer_name }}"
+  data-nakshathra="{{ bill.nakshathra }}"
+  data-date="{{ bill.date }}"
+  data-bill_id="{{ bill.id }}"
+  data-bill_no="{{ bill.bill_no }}"
+  data-total="{{ bill.total_amount }}"
+  data-family='[
+    {% if bill.is_family %}
+      {% for m in bill.family_data %}
+        {"name":"{{ m.name }}","nakshathra":"{{ m.nakshathra }}"}
+        {% if not forloop.last %},{% endif %}
+      {% endfor %}
+    {% endif %}
+  ]'
+
+  data-poojas='[
+    {% for bp in bill.billpooja_set.all %}
+      {"name":"{{ bp.pooja.pooja_name }}","price":"{{ bp.pooja.price }}","qty":"{{ bp.quantity }}"}
+      {% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ]'
+>
+  View
 </button>
+
 
 
         </td>
@@ -328,13 +369,32 @@ function makeBillNo(d=new Date()){
 }
 
 // Build receipt HTML (same structure as dashboard)
-function buildReceiptHTML({cust, nak, cart, createdAt, bill_no, total_amount}) {
+function buildReceiptHTML({cust, nak, family, cart, createdAt, bill_no, total_amount, is_family}) {
   const created = createdAt ? new Date(createdAt) : new Date();
   const billNo = bill_no || makeBillNo(created);
-  const dateStr = created.toLocaleDateString('en-GB'); // DD/MM/YYYY
+  const dateStr = created.toLocaleDateString('en-GB'); 
   const total = total_amount ? parseFloat(total_amount) 
                              : (cart || []).reduce((s,p)=>s + (parseFloat(p.price||0) * parseInt(p.qty||1)), 0);
 
+  // Customers
+// Customers
+let customerRows = "";
+if (is_family && Array.isArray(family) && family.length > 0) {
+  family.forEach(m => {
+    customerRows += `<tr>
+                       <td>${m.name}</td>
+                       <td>${m.nakshathra}</td>
+                     </tr>`;
+  });
+} else {
+  customerRows = `<tr>
+                    <td>${cust}</td>
+                    <td>${nak}</td>
+                  </tr>`;
+}
+
+
+  // Poojas
   const poojaRows = (cart || []).map(p => `
     <tr>
       <td style="text-align:left;">${p.name}</td>
@@ -344,51 +404,57 @@ function buildReceiptHTML({cust, nak, cart, createdAt, bill_no, total_amount}) {
   `).join("");
 
   return `
-  <div class="receipt-wrap" role="document" aria-label="Receipt">
-    <div class="receipt-title">${ORG.name_ml}</div>
-    <div class="receipt-sub">${ORG.place_ml}, ഫോൺ : ${ORG.phone}</div>
-    <div class="receipt-bar">
-      <div class="receipt-meta">Vol : ${ORG.volume}&nbsp;&nbsp;<span class="billno">${billNo}</span></div>
-      <div class="receipt-heading">രസീത്</div>
-      <div class="receipt-meta">തീയതി : ${dateStr}</div>
-    </div>
+    <div class="receipt-wrap">
+      <div class="receipt-title">${ORG.name_ml}</div>
+      <div class="receipt-sub">${ORG.place_ml}, ഫോൺ : ${ORG.phone}</div>
+      <div class="receipt-bar">
+        <div class="receipt-meta">Vol : ${ORG.volume}&nbsp;&nbsp;<span class="billno">${billNo}</span></div>
+        <div class="receipt-heading">രസീത്</div>
+        <div class="receipt-meta">തീയതി : ${dateStr}</div>
+      </div>
+      
+      <!-- Pooja Table -->
+      <table class="items">
+        <thead><tr><th>വഴിപാടു</th><th>അളവ്</th><th>തുക</th></tr></thead>
+        <tbody>${poojaRows}</tbody>
+      </table>
 
-    <div class="receipt-grid">
-      <div class="box">
-        <span class="label">പേര്</span>
-        <div>${cust}</div>
-      </div>
-      <div class="box">
-        <span class="label">നക്ഷത്രം</span>
-        <div>${nak}</div>
-      </div>
-      <div class="box" style="grid-column:1 / span 2;">
-        <span class="label">വഴിപാടു വിവരം</span>
-        <table class="items">
-          <thead>
-            <tr><th style="text-align:left;">വഴിപാടു</th><th style="width:18%;">അളവ്</th><th style="width:22%;">തുക</th></tr>
-          </thead>
-          <tbody>${poojaRows}</tbody>
-        </table>
-        <div class="total-row">ആകെ തുക : ₹${total.toFixed(2)}</div>
+      <!-- Customers Table -->
+      <table class="items" style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th>പേര്</th>
+            <th>നക്ഷത്രം</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${customerRows}
+        </tbody>
+      </table>
+
+
+      <!-- Total -->
+      <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:700; margin-top:5px;">
+        <div>ആകെ തുക : ₹${total.toFixed(2)}</div>
+        <div>റീസിവർ- 9846076654</div>
       </div>
     </div>
-
-    <div class="sign">റീസിവർ- 9846076654</div>
-  </div>`;
+  `;
 }
+
 
 // Parse a poojas text from backend into [{name, qty, price}, ...]
 // expected format per row: "Pooja A (₹100), Pooja B (₹50)" or just "Pooja A"
 function parsePoojasString(s) {
   if (!s) return [];
   try {
-    return JSON.parse("[" + s + "]");
+    return JSON.parse(s); // don't wrap in [ ]
   } catch (e) {
     console.error("Parse error:", e, s);
     return [];
   }
 }
+
 
 // Toggle date inputs
 function toggleDateInput(id) {
@@ -435,29 +501,25 @@ document.addEventListener("DOMContentLoaded", function(){
   // Attach click to all view buttons
   document.querySelectorAll(".viewBillBtn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const cust = btn.dataset.customer || '';
-      const nak  = btn.dataset.nakshathra || '';
-      const dateStr = btn.dataset.date || '';
-      // try to parse ISO-like date, fallback to now
-      let createdAt;
-      try { createdAt = dateStr ? new Date(dateStr) : new Date(); } catch(e) { createdAt = new Date(); }
+      const family = JSON.parse(btn.dataset.family || "[]");
+      const poojas = JSON.parse(btn.dataset.poojas || "[]");
 
-      const poojasRaw = btn.dataset.poojas || '';
-      const cart = parsePoojasString(poojasRaw);
+      const html = buildReceiptHTML({
+        cust: btn.dataset.customer,
+        nak: btn.dataset.nakshathra,
+        family: family,
+        cart: poojas,
+        createdAt: btn.dataset.date,
+        bill_no: btn.dataset.bill_no,
+        total_amount: btn.dataset.total,
+        is_family: btn.dataset.is_family === "true"
+      });
 
-      // try to use server bill_no if present, otherwise generate one from createdAt
-      // Prefer backend bill_no, otherwise fall back to DB id, then fallback to generated
-      const bill_no = btn.dataset.bill_id;
-
-      const total_amount = btn.dataset.total;
-      // Build HTML using same builder used in dashboard
-      const html = buildReceiptHTML({ cust, nak, cart, createdAt, bill_no, total_amount });
-
-      // Put into modal body and show
       document.getElementById("bill-body").innerHTML = html;
-      billModal.show();
+      new bootstrap.Modal(document.getElementById("billModal")).show();
     });
   });
+
 
   // Print from modal (ensures same CSS used)
   const printBtn = document.getElementById("printBillBtn");
