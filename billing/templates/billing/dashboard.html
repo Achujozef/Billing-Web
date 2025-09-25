@@ -323,7 +323,10 @@
 function buildReceiptHTML({cust, nak, cart, createdAt, billId}) {
   const billNo = billId;
   const dateStr = createdAt.toLocaleDateString('en-GB'); // DD/MM/YYYY
-  const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+  let total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+  if (Array.isArray(cust)) {
+    total = total * cust.length;  // multiply by number of members
+  }
 
   // Customers rows
   let customerRows = "";
@@ -422,7 +425,7 @@ function buildReceiptHTML({cust, nak, cart, createdAt, billId}) {
     renderCart();
   }
 
-  function renderCart() {
+  {% comment %} function renderCart() {
     let tbody = document.getElementById("selected-products");
     tbody.innerHTML = "";
     let total = 0;
@@ -444,7 +447,34 @@ function buildReceiptHTML({cust, nak, cart, createdAt, billId}) {
     document.getElementById("total").innerText = total;
     document.getElementById("calc-total").innerText = total;
     calculateBalance();
-  }
+  } {% endcomment %}
+function renderCart() {
+  let tbody = document.getElementById("selected-products");
+  tbody.innerHTML = "";
+  let total = 0;
+  cart.forEach(p => {
+    total += p.price * p.qty;
+    tbody.innerHTML += `
+      <tr>
+        <td>${p.name}</td>
+        <td>₹${p.price}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary" onclick="updateQty('${p.name}',-1)">-</button>
+          <span class="px-2">${p.qty}</span>
+          <button class="btn btn-sm btn-outline-secondary" onclick="updateQty('${p.name}',1)">+</button>
+        </td>
+        <td><button class="btn btn-sm btn-outline-danger" onclick="removeProduct('${p.name}')">🗑</button></td>
+      </tr>
+    `;
+  });
+
+  let memberCount = currentBillIsFamily ? currentFamilyMembers.length : 1;
+  total = total * memberCount;
+
+  document.getElementById("total").innerText = total;
+  document.getElementById("calc-total").innerText = total;
+  calculateBalance();
+}
 
   function calculateBalance() {
     let paid = parseFloat(document.getElementById("paid").value || 0);

@@ -181,7 +181,8 @@ def generate_family_bill(request):
                 )
 
             # update total_amount in Bill
-            bill.total_amount = total_amount
+            final_total = total_amount * len(members)
+            bill.total_amount = final_total
             bill.save()
 
         return JsonResponse({"success": True, "bill_id": bill.id})

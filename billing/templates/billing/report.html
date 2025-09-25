@@ -106,6 +106,7 @@
   data-date="{{ bill.date }}"
   data-bill_id="{{ bill.id }}"
   data-bill_no="{{ bill.bill_no }}"
+  data-total="{{ bill.total_amount }}"
   data-poojas='{% for bp in bill.billpooja_set.all %}
     {"name": "{{ bp.pooja.pooja_name }}", "price": "{{ bp.pooja.price }}", "qty": "{{ bp.quantity }}"}{% if not forloop.last %},{% endif %}
   {% endfor %}'
@@ -327,11 +328,12 @@ function makeBillNo(d=new Date()){
 }
 
 // Build receipt HTML (same structure as dashboard)
-function buildReceiptHTML({cust, nak, cart, createdAt, bill_no}) {
+function buildReceiptHTML({cust, nak, cart, createdAt, bill_no, total_amount}) {
   const created = createdAt ? new Date(createdAt) : new Date();
   const billNo = bill_no || makeBillNo(created);
   const dateStr = created.toLocaleDateString('en-GB'); // DD/MM/YYYY
-  const total = (cart || []).reduce((s,p)=>s + (parseFloat(p.price||0) * parseInt(p.qty||1)), 0);
+  const total = total_amount ? parseFloat(total_amount) 
+                             : (cart || []).reduce((s,p)=>s + (parseFloat(p.price||0) * parseInt(p.qty||1)), 0);
 
   const poojaRows = (cart || []).map(p => `
     <tr>
@@ -447,9 +449,9 @@ document.addEventListener("DOMContentLoaded", function(){
       // Prefer backend bill_no, otherwise fall back to DB id, then fallback to generated
       const bill_no = btn.dataset.bill_id;
 
-
+      const total_amount = btn.dataset.total;
       // Build HTML using same builder used in dashboard
-      const html = buildReceiptHTML({ cust, nak, cart, createdAt, bill_no });
+      const html = buildReceiptHTML({ cust, nak, cart, createdAt, bill_no, total_amount });
 
       // Put into modal body and show
       document.getElementById("bill-body").innerHTML = html;
