@@ -373,9 +373,9 @@ function makeBillNo(d=new Date()){
 }
 
 // Build receipt HTML (same structure as dashboard)
-function buildReceiptHTML({cust, nak, family, cart, createdAt, bill_no, total_amount, is_family}) {
+function buildReceiptHTML({cust, nak, family, cart, createdAt, bill_id, total_amount, is_family}) {
   const created = createdAt ? new Date(createdAt) : new Date();
-  const billNo = bill_no || makeBillNo(created);
+  const billNo = bill_id;
   const dateStr = created.toLocaleDateString('en-GB'); 
   const total = total_amount ? parseFloat(total_amount) 
                              : (cart || []).reduce((s,p)=>s + (parseFloat(p.price||0) * parseInt(p.qty||1)), 0);
@@ -514,7 +514,7 @@ document.addEventListener("DOMContentLoaded", function(){
         family: family,
         cart: poojas,
         createdAt: btn.dataset.date,
-        bill_no: btn.dataset.bill_no,
+        bill_id: btn.dataset.bill_id,
         total_amount: btn.dataset.total,
         is_family: btn.dataset.is_family === "true"
       });
