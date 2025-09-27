@@ -70,7 +70,11 @@
      Product-wise Report
   </a>
 </div>
-
+  <form method="get" class="d-flex align-items-center ms-auto">
+    <input type="text" name="search" class="form-control form-control-sm me-2"
+           placeholder="Search Bill ID" value="{{ request.GET.search }}">
+    <button type="submit" class="btn btn-sm btn-dark">Search</button>
+  </form>
 <!-- PRINT AREA (single wrapper) -->
 <div id="printArea">
   <div class="table-responsive shadow-sm rounded-3 overflow-hidden">

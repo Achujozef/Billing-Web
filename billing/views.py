@@ -549,9 +549,16 @@ def report_view(request):
     view_mode = request.GET.get("view")  
     page = int(request.GET.get("page", 1))
     report_type = request.GET.get("report", "bill")  # default bill
-
+    search_query = request.GET.get("search", "").strip()
     today = timezone.now().date()
     bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-id")
+
+    if search_query:
+        if search_query.isdigit():  
+            bills_qs = bills_qs.filter(id=search_query)
+        else:
+            # fallback if someone searches non-numeric, ignore
+            bills_qs = bills_qs.none()
 
     # Filtering
     if filter_option:
