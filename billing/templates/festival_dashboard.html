@@ -17,7 +17,7 @@
         <div class="card-body">
           <h5 class="card-title">Events</h5>
           <p class="card-text">{{ events|length }} total</p>
-          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEventModal">+ Add Event</button>
+          <button class="btn btn-primary btn-sm" onclick="showPasswordPrompt('addEvent')">+ Add Event</button>
         </div>
       </div>
     </div>
@@ -26,7 +26,7 @@
         <div class="card-body">
           <h5 class="card-title">Festival Poojas</h5>
           <p class="card-text">{{ festival_poojas|length }} total</p>
-          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPoojaModal">+ Add Pooja</button>
+          <button class="btn btn-primary btn-sm" onclick="showPasswordPrompt('addPooja')">+ Add Pooja</button>
         </div>
       </div>
     </div>
@@ -51,13 +51,10 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           {{ event.event_name }}
           <span>
-            <a href="#" class="me-2" data-bs-toggle="modal" data-bs-target="#editEventModal{{ event.id }}">Edit</a>
-                      <button class="btn btn-link text-danger p-0" 
-                  data-bs-toggle="modal" 
-                  data-bs-target="#confirmDeleteModal" 
-                  data-url="{% url 'delete_event' event.id %}">
-            Delete
-          </button>
+            <a href="#" class="me-2" onclick="showPasswordPrompt('editEvent', {{ event.id }})">Edit</a>
+            <button class="btn btn-link text-danger p-0" onclick="showPasswordPrompt('deleteEvent', {{ event.id }}, '{% url 'delete_event' event.id %}')">
+              Delete
+            </button>
           </span>
         </li>
 
@@ -97,13 +94,10 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           {{ pooja.pooja_name }} - ₹{{ pooja.price }}
           <span>
-            <a href="#" class="me-2" data-bs-toggle="modal" data-bs-target="#editPoojaModal{{ pooja.id }}">Edit</a>
-            <button class="btn btn-link text-danger p-0" 
-                  data-bs-toggle="modal" 
-                  data-bs-target="#confirmDeleteModal" 
-                  data-url="{% url 'delete_festival_pooja' pooja.id %}">
-            Delete
-          </button>
+            <a href="#" class="me-2" onclick="showPasswordPrompt('editPooja', {{ pooja.id }})">Edit</a>
+            <button class="btn btn-link text-danger p-0" onclick="showPasswordPrompt('deletePooja', {{ pooja.id }}, '{% url 'delete_festival_pooja' pooja.id %}')">
+              Delete
+            </button>
           </span>
         </li>
 
@@ -152,6 +146,7 @@
     </div>
   </div>
 </div>
+
   <!-- ================= Festival Bills Table ================= -->
 <!-- ================= Filter Bills ================= -->
 <div class="card mb-4 shadow-sm border-0">
@@ -191,7 +186,6 @@
     </div>
   </div>
 </div>
-
 
   <div class="card shadow-sm border-0">
     <div class="card-header">
@@ -431,7 +425,6 @@
   </div>
 </div>
 
-
 </div>
 
 <style id="receipt-style">
@@ -465,8 +458,6 @@
   }
 </style>
 
-
-
 <!-- jQuery (needed for IME, but not for Bootstrap 5) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -479,6 +470,45 @@
 <script src="{% static 'js/jquery.ime.preferences.js' %}"></script>
 
 <script>
+// ================= PASSWORD AUTHENTICATION =================
+const ADMIN_PASSWORD = "admin@123"; // Change this to your desired password
+
+function showPasswordPrompt(action, itemId = null, deleteUrl = null) {
+    const password = prompt("🔐 Enter Admin Password:");
+    
+    if (password === null) {
+        return; // User cancelled
+    }
+    
+    if (password !== ADMIN_PASSWORD) {
+        alert("❌ Incorrect password! Access denied.");
+        return;
+    }
+    
+    // Password is correct, proceed with the action
+    switch (action) {
+        case 'addEvent':
+            $('#addEventModal').modal('show');
+            break;
+        case 'addPooja':
+            $('#addPoojaModal').modal('show');
+            break;
+        case 'editEvent':
+            $(`#editEventModal${itemId}`).modal('show');
+            break;
+        case 'editPooja':
+            $(`#editPoojaModal${itemId}`).modal('show');
+            break;
+        case 'deleteEvent':
+        case 'deletePooja':
+            // Set up the delete confirmation modal
+            var confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.setAttribute('href', deleteUrl);
+            $('#confirmDeleteModal').modal('show');
+            break;
+    }
+}
+
 // Malayalam IME setup
 $(document).ready(function() {
     $('.malayalam-input').ime({ imePath: '{% static "js/jquery.ime.js" %}' });
@@ -560,17 +590,8 @@ function resetFilter() {
     $('#filterPayment').val('');
     applyFilter();
 }
-</script>
 
-<script>
     let cart = [];
-var confirmDeleteModal = document.getElementById('confirmDeleteModal');
-confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
-    var button = event.relatedTarget; // Button that triggered the modal
-    var deleteUrl = button.getAttribute('data-url'); // Extract URL from data-url attribute
-    var confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.setAttribute('href', deleteUrl);
-});
 const ORG = {
   name_ml: "വെൺകുളം ശ്രീസരസ്വതി ക്ഷേത്രം",    // change if needed
   place_ml: "സരസ്വതിപുരം, ഇടവ",
@@ -675,6 +696,7 @@ function generateBill() {
   const billModal = new bootstrap.Modal(document.getElementById('billModal'));
   billModal.show();
 }
+
 function generateAndPrint() {
     const cust = document.getElementById("cust-name").value.trim();
     const nak  = document.getElementById("nakshathra").value.trim();
@@ -750,8 +772,7 @@ function generateAndPrint() {
         alert("Error saving the bill.");
     });
 }
-</script>
-<script>
+
 $(document).on("click", ".toggle-payment", function () {
     const billId = $(this).data("id");
     const action = $(this).data("action"); // mark_paid / mark_unpaid
@@ -767,6 +788,7 @@ $(document).on("click", ".toggle-payment", function () {
     // Show modal
     $("#paymentConfirmModal").modal("show");
 });
+
 $("#paymentConfirmForm").on("submit", function (e) {
     e.preventDefault();
 
@@ -803,7 +825,6 @@ $("#paymentConfirmForm").on("submit", function (e) {
         }
     });
 });
-
 </script>
 
 {% endblock %}
