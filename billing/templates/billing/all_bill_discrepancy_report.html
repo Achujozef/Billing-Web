@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>All Bill Discrepancy Report</h2>
+
+{% if discrepancies %}
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr style="background:#f2f2f2;">
+        <th>Bill ID</th>
+        <th>Customer</th>
+        <th>Poojas</th>
+        <th>Expected Total</th>
+        <th>Actual Total</th>
+        <th>Difference</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in discrepancies %}
+      <tr>
+        <td>{{ d.bill.id }}</td>
+        <td>{{ d.customer_name }}</td>
+        <td>
+          <ul style="margin:0; padding-left:18px;">
+            {% for p in d.poojas %}
+              <li>{{ p.name }} — ₹{{ p.price }} × {{ p.quantity }} = ₹{{ p.subtotal }}</li>
+            {% endfor %}
+          </ul>
+        </td>
+        <td>₹{{ d.expected_total }}</td>
+        <td>₹{{ d.actual_total }}</td>
+        <td style="color:{% if d.difference != 0 %}red{% else %}green{% endif %}; font-weight:bold;">
+          ₹{{ d.difference }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <hr>
+  <h3>Grand Totals</h3>
+  <p><strong>Expected:</strong> ₹{{ grand_expected }}</p>
+  <p><strong>Actual:</strong> ₹{{ grand_actual }}</p>
+  <p><strong style="color:red;">Difference:</strong> ₹{{ grand_difference }}</p>
+{% else %}
+  <p>No discrepancies found ✅</p>
+{% endif %}
+
+{% endblock %}

@@ -50,5 +50,6 @@ urlpatterns = [
 
     path("bill-discrepancy-report/", views.bill_discrepancy_report, name="bill_discrepancy_report"),
 
-
+    path("family-bill-discrepancy-report/", views.family_bill_discrepancy_report, name="family_bill_discrepancy_report"),
+    path("all-bill-discrepancy-report/", views.all_bill_discrepancy_report, name="all_bill_discrepancy_report"),
 ]

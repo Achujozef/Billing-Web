@@ -1018,3 +1018,90 @@ def bill_discrepancy_report(request):
     }
 
     return render(request, "billing/bill_discrepancy_report.html", context)
+
+def family_bill_discrepancy_report(request):
+    bills = Bill.objects.filter(family_members__isnull=False).distinct()
+
+    discrepancies = []
+    grand_expected = 0
+    grand_actual = 0
+
+    for bill in bills:
+        pooja_items = BillPooja.objects.filter(bill=bill).select_related("pooja")
+        expected_total = sum([p.pooja.price * p.quantity for p in pooja_items])
+        actual_total = bill.total_amount
+        difference = expected_total - actual_total
+
+        if difference != 0:
+            discrepancies.append({
+                "bill": bill,
+                "customer_name": bill.customer_name,
+                "family_members": [f"{m.name} ({m.nakshathra})" for m in bill.family_members.all()],
+                "poojas": [
+                    {
+                        "name": p.pooja.pooja_name,
+                        "price": p.pooja.price,
+                        "quantity": p.quantity,
+                        "subtotal": p.pooja.price * p.quantity
+                    }
+                    for p in pooja_items
+                ],
+                "expected_total": expected_total,
+                "actual_total": actual_total,
+                "difference": difference,
+            })
+            grand_expected += expected_total
+            grand_actual += actual_total
+
+    context = {
+        "discrepancies": discrepancies,
+        "grand_expected": grand_expected,
+        "grand_actual": grand_actual,
+        "grand_difference": grand_expected - grand_actual,
+    }
+
+    return render(request, "billing/family_bill_discrepancy_report.html", context)
+
+def all_bill_discrepancy_report(request):
+    bills = Bill.objects.all().distinct()
+
+    discrepancies = []
+    grand_expected = 0
+    grand_actual = 0
+
+    for bill in bills:
+        pooja_items = BillPooja.objects.filter(bill=bill).select_related("pooja")
+        expected_total = sum([p.pooja.price * p.quantity for p in pooja_items])
+        actual_total = bill.total_amount
+        difference = expected_total - actual_total
+
+        if difference != 0:
+            discrepancies.append({
+                "bill": bill,
+                "customer_name": bill.customer_name,
+                "poojas": [
+                    {
+                        "name": p.pooja.pooja_name,
+                        "price": p.pooja.price,
+                        "quantity": p.quantity,
+                        "subtotal": p.pooja.price * p.quantity
+                    }
+                    for p in pooja_items
+                ],
+                "expected_total": expected_total,
+                "actual_total": actual_total,
+                "difference": difference,
+            })
+            grand_expected += expected_total
+            grand_actual += actual_total
+
+    context = {
+        "discrepancies": discrepancies,
+        "grand_expected": grand_expected,
+        "grand_actual": grand_actual,
+        "grand_difference": grand_expected - grand_actual,
+    }
+
+    return render(request, "billing/all_bill_discrepancy_report.html", context)
+
+
