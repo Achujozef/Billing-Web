@@ -971,3 +971,50 @@ def toggle_payment_status(request, bill_id):
     
     bill.save()
     return JsonResponse({"success": True, "status": "Paid" if bill.payment_status else "Pending"})
+
+
+
+def bill_discrepancy_report(request):
+    # Get all bills from EventBooking
+    bills = Bill.objects.filter(event_bookings__isnull=False).distinct()
+
+    discrepancies = []
+    grand_expected = 0
+    grand_actual = 0
+
+    for bill in bills:
+        # Expected total from BillPooja
+        pooja_items = BillPooja.objects.filter(bill=bill).select_related("pooja")
+        expected_total = sum([p.pooja.price * p.quantity for p in pooja_items])
+        actual_total = bill.total_amount
+        difference = expected_total - actual_total
+
+        if difference != 0:  # Only show mismatches
+            discrepancies.append({
+                "bill": bill,
+                "customer_name": bill.customer_name,
+                "poojas": [
+                    {
+                        "name": p.pooja.pooja_name,
+                        "price": p.pooja.price,
+                        "quantity": p.quantity,
+                        "subtotal": p.pooja.price * p.quantity
+                    }
+                    for p in pooja_items
+                ],
+                "expected_total": expected_total,
+                "actual_total": actual_total,
+                "difference": difference,
+            })
+
+            grand_expected += expected_total
+            grand_actual += actual_total
+
+    context = {
+        "discrepancies": discrepancies,
+        "grand_expected": grand_expected,
+        "grand_actual": grand_actual,
+        "grand_difference": grand_expected - grand_actual,
+    }
+
+    return render(request, "billing/bill_discrepancy_report.html", context)

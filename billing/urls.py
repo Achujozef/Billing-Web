@@ -47,4 +47,8 @@ urlpatterns = [
 
     path("bill/<int:bill_id>/toggle-payment/", views.toggle_payment_status, name="toggle_payment_status"),
 
+
+    path("bill-discrepancy-report/", views.bill_discrepancy_report, name="bill_discrepancy_report"),
+
+
 ]
