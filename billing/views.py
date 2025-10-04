@@ -1075,10 +1075,24 @@ def all_bill_discrepancy_report(request):
         actual_total = bill.total_amount
         difference = expected_total - actual_total
 
+        # ✅ Find the origin of the bill
+        bill_type = []
+        if bill.event_bookings.exists():
+            bill_type.append("Festival/Event")
+        if bill.family_members.exists():
+            bill_type.append("Family")
+        if bill.subscription_bills.exists():
+            bill_type.append("Subscription")
+        if not bill_type:
+            bill_type.append("Regular")
+
+        bill_type_label = ", ".join(bill_type)
+
         if difference != 0:
             discrepancies.append({
                 "bill": bill,
                 "customer_name": bill.customer_name,
+                "bill_type": bill_type_label,   # ✅ added
                 "poojas": [
                     {
                         "name": p.pooja.pooja_name,
@@ -1103,5 +1117,6 @@ def all_bill_discrepancy_report(request):
     }
 
     return render(request, "billing/all_bill_discrepancy_report.html", context)
+
 
 

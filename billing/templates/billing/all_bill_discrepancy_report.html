@@ -8,6 +8,7 @@
       <tr style="background:#f2f2f2;">
         <th>Bill ID</th>
         <th>Customer</th>
+        <th>Origin</th> <!-- ✅ new column -->
         <th>Poojas</th>
         <th>Expected Total</th>
         <th>Actual Total</th>
@@ -19,6 +20,7 @@
       <tr>
         <td>{{ d.bill.id }}</td>
         <td>{{ d.customer_name }}</td>
+        <td><strong>{{ d.bill_type }}</strong></td> <!-- ✅ shows origin -->
         <td>
           <ul style="margin:0; padding-left:18px;">
             {% for p in d.poojas %}
