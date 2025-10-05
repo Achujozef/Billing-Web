@@ -1095,6 +1095,7 @@ def all_bill_discrepancy_report(request):
                 "bill_type": bill_type_label,   # ✅ added
                 "poojas": [
                     {
+                        "bill_pooja_id": p.id,
                         "name": p.pooja.pooja_name,
                         "price": p.pooja.price,
                         "quantity": p.quantity,

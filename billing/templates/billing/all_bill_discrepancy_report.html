@@ -24,7 +24,8 @@
         <td>
           <ul style="margin:0; padding-left:18px;">
             {% for p in d.poojas %}
-              <li>{{ p.name }} — ₹{{ p.price }} × {{ p.quantity }} = ₹{{ p.subtotal }}</li>
+            
+              <li><strong>#{{ p.bill_pooja_id }}</strong> — {{ p.name }} — ₹{{ p.price }} × {{ p.quantity }} = ₹{{ p.subtotal }}</li>
             {% endfor %}
           </ul>
         </td>
