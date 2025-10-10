@@ -194,7 +194,7 @@
           {% for p in products %}
           <tr>
             <td>{{ forloop.counter }}</td>
-            <td>{{ p.pooja_name }}</td>
+          <td>{{ p.pooja_name }} <small class="text-muted">(₹{{ p.price }})</small></td>
             <td>{{ p.quantity }}</td>
             <td>₹{{ p.total }}</td>
           </tr>
