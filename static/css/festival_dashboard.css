@@ -1,0 +1,142 @@
+/* Receipt Styles */
+.receipt-wrap {
+  width: 21cm;
+  height: 9.9cm;
+  border: 1px solid #0b3a8f;
+  padding: 6px;
+  box-sizing: border-box;
+  font-family: 'Noto Sans Malayalam', sans-serif;
+  margin: 0 auto;
+}
+
+.receipt-title {
+  text-align: center;
+  font-weight: 800;
+  color: #0b3a8f;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.receipt-sub {
+  text-align: center;
+  font-size: 12px;
+  margin-top: 2px;
+  color: #0b3a8f;
+}
+
+.receipt-bar {
+  margin: 6px 0 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.receipt-heading {
+  background: #0b3a8f;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.receipt-meta {
+  font-size: 12px;
+  color: #0b3a8f;
+}
+
+.receipt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 6px;
+}
+
+.box {
+  border: 1px solid #0b3a8f;
+  min-height: 28px;
+  padding: 3px 5px;
+}
+
+.label {
+  position: relative;
+  top: -8px;
+  background: #fff;
+  display: inline-block;
+  padding: 0 4px;
+  color: #0b3a8f;
+  font-size: 12px;
+}
+
+.items {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.items th,
+.items td {
+  border: 1px solid #0b3a8f;
+  padding: 3px 4px;
+  vertical-align: top;
+}
+
+.items th {
+  background: #eef3ff;
+  color: #0b3a8f;
+}
+
+.total-row {
+  text-align: right;
+  font-weight: 700;
+  margin-top: 6px;
+  color: #0b3a8f;
+  font-size: 13px;
+}
+
+.sign {
+  text-align: right;
+  margin-top: 14px;
+  color: #0b3a8f;
+  font-size: 12px;
+}
+
+.billno {
+  font-weight: 700;
+  font-size: 12px;
+  color: #c51616;
+  letter-spacing: 0.5px;
+}
+
+/* Suggestion Box Styles */
+#customer_suggestions,
+#address_suggestions,
+#product_suggestions,
+[id*="customer_suggestions_fam_"] {
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Form Control Styling */
+.modal-body {
+  min-height: 300px;
+  overflow: auto;
+}
+
+/* Print Media Query */
+@media print {
+  @page {
+    size: A4;
+    margin: 0.5cm;
+  }
+  body {
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .receipt-wrap {
+    margin-top: 0;
+  }
+}

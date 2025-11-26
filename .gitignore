@@ -32,10 +32,8 @@ celerybeat-schedule
 !**/migrations/__init__.py
 
 # Static and media files
-/staticfiles/
 media/
-static/
-static_root/
+
 media_root/
 
 # IDEs

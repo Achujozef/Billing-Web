@@ -2,6 +2,7 @@
 {% load static %}
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/festival_dashboard.css' %}">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="{% static 'js/jquery.ime.js' %}"></script>
 <script src="{% static 'js/jquery.ime.selector.js' %}"></script>
@@ -340,8 +341,7 @@
 
                 <!-- Suggestion Box -->
                 <div id="customer_suggestions" 
-                    class="list-group position-absolute w-100 shadow-sm d-none"
-                    style="z-index:1000; max-height:200px; overflow-y:auto;"></div>
+                    class="list-group position-absolute w-100 shadow-sm d-none"></div>
               </div>
 
             <div class="col-md-6">
@@ -358,8 +358,7 @@
 
               <!-- Suggestion Box -->
               <div id="address_suggestions" 
-                  class="list-group position-absolute w-100 shadow-sm d-none"
-                  style="z-index:1000; max-height:200px; overflow-y:auto;"></div>
+                  class="list-group position-absolute w-100 shadow-sm d-none"></div>
             </div>
 
             <div class="col-md-6">
@@ -404,7 +403,7 @@
         <h5 class="modal-title">Bill Preview</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body" id="bill-body" style="min-height:300px; overflow:auto;"></div>
+      <div class="modal-body" id="bill-body"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         <button type="button" class="btn btn-success" onclick="printBill()">🖨 Print</button>
@@ -441,36 +440,6 @@
 
 </div>
 
-<style id="receipt-style">
-  .receipt-wrap {
-    width: 21cm;
-    height: 9.9cm;
-    border: 1px solid #0b3a8f;
-    padding: 6px;
-    box-sizing: border-box;
-    font-family: 'Noto Sans Malayalam', sans-serif;
-    margin: 0 auto;
-  }
-  .receipt-title { text-align:center; font-weight:800; color:#0b3a8f; font-size:16px; line-height:1.1; }
-  .receipt-sub { text-align:center; font-size:12px; margin-top:2px; color:#0b3a8f; }
-  .receipt-bar { margin:6px 0 4px; display:flex; justify-content:space-between; align-items:center; }
-  .receipt-heading { background:#0b3a8f; color:#fff; padding:2px 8px; border-radius:3px; font-weight:700; font-size:13px; letter-spacing:0.5px; }
-  .receipt-meta { font-size:12px; color:#0b3a8f; }
-  .receipt-grid { display:grid; grid-template-columns: 1fr 1fr; grid-gap:6px; }
-  .box { border:1px solid #0b3a8f; min-height:28px; padding:3px 5px; }
-  .label { position:relative; top:-8px; background:#fff; display:inline-block; padding:0 4px; color:#0b3a8f; font-size:12px; }
-  .items { width:100%; border-collapse:collapse; font-size:12px; margin-top:2px; }
-  .items th, .items td { border:1px solid #0b3a8f; padding:3px 4px; vertical-align:top; }
-  .items th { background:#eef3ff; color:#0b3a8f; }
-  .total-row { text-align:right; font-weight:700; margin-top:6px; color:#0b3a8f; font-size:13px; }
-  .sign { text-align:right; margin-top:14px; color:#0b3a8f; font-size:12px; }
-  .billno { font-weight:700; font-size:12px; color:#c51616; letter-spacing:0.5px; }
-  @media print {
-    @page { size: A4; margin: 0.5cm; }
-    body { margin:0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .receipt-wrap { margin-top:0; }
-  }
-</style>
 
 <!-- jQuery (needed for IME, but not for Bootstrap 5) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -751,7 +720,6 @@ function generateAndPrint() {
             // Backend saved successfully, now generate bill HTML for print
             const createdAt = new Date(data.created_at); // you can return the bill timestamp from backend
             const html = buildReceiptHTML({cust, nak, address, cart, createdAt});
-            const css = document.getElementById("receipt-style").innerHTML;
 
             const w = window.open('', '', 'width=900,height=650');
             w.document.write(`
@@ -759,7 +727,7 @@ function generateAndPrint() {
                     <head>
                         <title>Receipt</title>
                         <meta charset="utf-8">
-                        <style>${css}</style>
+                        <link rel="stylesheet" href="/static/css/festival_dashboard.css">
                     </head>
                     <body>${html}</body>
                 </html>

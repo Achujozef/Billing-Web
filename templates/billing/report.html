@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="/static/css/report.css">
+
 <div class="container py-4">
 
   <h3 class="fw-bold text-secondary mb-4">📊 Sales Report</h3>
@@ -269,85 +271,6 @@
     </div>
   </div>
 </div>
-
-<style>
-/* Make date inputs look like buttons */
-input[type="date"].date-btn {
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  height: 32px;
-  display: inline-block;
-  border: 1px solid #343a40;
-  border-radius: 0.25rem;
-  background-color: #fff;
-  color: #343a40;
-}
-
-input[type="date"].date-btn::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  filter: invert(0.5);
-}
-
-input[type="date"].date-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 0.2rem rgba(52, 58, 64, 0.25);
-}
-
-/* Styling for cycle payment rows */
-.table-dark td {
-  background-color: rgba(52, 58, 64, 0.1) !important;
-  border-color: rgba(52, 58, 64, 0.2);
-}
-
-/* Active filter button styling */
-.btn.active {
-  background-color: #343a40 !important;
-  color: white !important;
-}
-</style>
-
-<!-- RECEIPT STYLE (identical to dashboard, kept in this template) -->
-<style id="receipt-style">
-  .receipt-wrap {
-    width: 21cm;           /* full A4 width */
-    height: 9.9cm;         /* 1/3 of A4 height */
-    border: 1px solid #0b3a8f;
-    padding: 6px;
-    box-sizing: border-box;
-    font-family: 'Noto Sans Malayalam', sans-serif;
-    margin: 0 auto;
-    background: #fff;
-  }
-  .receipt-title { text-align:center; font-weight:800; color:#0b3a8f; font-size:16px; line-height:1.1; }
-  .receipt-sub { text-align:center; font-size:12px; margin-top:2px; color:#0b3a8f; }
-  .receipt-bar { margin:6px 0 4px; display:flex; justify-content:space-between; align-items:center; }
-  .receipt-heading { background:#0b3a8f; color:#fff; padding:2px 8px; border-radius:3px; font-weight:700; font-size:13px; letter-spacing:0.5px; }
-  .receipt-meta { font-size:12px; color:#0b3a8f; }
-  .receipt-grid { display:grid; grid-template-columns: 1fr 1fr; grid-gap:6px; }
-  .box { border:1px solid #0b3a8f; min-height:28px; padding:3px 5px; }
-  .label { position:relative; top:-8px; background:#fff; display:inline-block; padding:0 4px; color:#0b3a8f; font-size:12px; }
-  .items { width:100%; border-collapse:collapse; font-size:12px; margin-top:2px; }
-  .items th, .items td { border:1px solid #0b3a8f; padding:3px 4px; vertical-align:top; }
-  .items th { background:#eef3ff; color:#0b3a8f; }
-  .total-row { text-align:right; font-weight:700; margin-top:6px; color:#0b3a8f; font-size:13px; }
-  .sign { text-align:right; margin-top:14px; color:#0b3a8f; font-size:12px; }
-  .billno { font-weight:700; font-size:12px; color:#c51616; letter-spacing:0.5px; } /* small lettering */
-  @media print {
-    @page {
-      size: A4;
-      margin: 0.5cm;       /* top/side margins */
-    }
-    body {
-      margin: 0;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .receipt-wrap {
-      margin-top: 0;       /* bill starts at top */
-    }
-  }
-</style>
 
 <script>
 // Organization data - same as dashboard

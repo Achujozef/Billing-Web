@@ -1,18 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<style>
-#pooja-grid-wrapper {
-  overflow-y: auto;          /* vertical scroll only */
-  overflow-x: hidden;        /* hide horizontal scroll */
-  max-height: calc(100vh - 120px); /* adjust for header/title */
-  padding-right: 8px;        /* optional: avoid content touching scrollbar */
-}
-
-/* Optional: prevent row from exceeding container width */
-#pooja-grid {
-  margin: 0;
-}
-</style>
+<link rel="stylesheet" href="/static/css/poojas.css">
 
 <div class="container py-4">
 
@@ -73,42 +61,6 @@
     </div>
   </div>
 </div>
-
-<style>
-/* Cards */
-.card {
-  border-radius: 16px !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-}
-
-/* Buttons */
-.btn-dark, .btn-outline-dark {
-  transition: all 0.3s ease;
-}
-.btn-dark:hover, .btn-outline-dark:hover {
-  background-color: #343a40;
-  color: #fff;
-}
-.btn-outline-danger:hover {
-  background-color: #dc3545;
-  color: #fff;
-}
-
-/* Typography */
-h3, h5 {
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-}
-
-/* Modal */
-.modal-content {
-  border-radius: 16px !important;
-}
-</style>
 
 <script>
 function confirmPassword() {

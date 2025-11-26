@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="/static/css/discrepancy_reports.css">
 
 <h2>Bill Discrepancy Report</h2>
 
 {% if discrepancies %}
-  <table border="1" cellpadding="5">
+  <table class="discrepancy-table">
     <thead>
       <tr>
         <th>Bill ID</th>
@@ -21,7 +22,7 @@
         <td>{{ d.bill.id }}</td>
         <td>{{ d.customer_name }}</td>
         <td>
-          <ul style="margin: 0; padding-left: 18px;">
+          <ul class="pooja-list">
             {% for p in d.poojas %}
               <li>{{ p.name }} — ₹{{ p.price }} × {{ p.quantity }} = ₹{{ p.subtotal }}</li>
             {% endfor %}
@@ -29,18 +30,20 @@
         </td>
         <td>₹{{ d.expected_total }}</td>
         <td>₹{{ d.actual_total }}</td>
-        <td style="color: red; font-weight: bold;">₹{{ d.difference }}</td>
+        <td class="difference-value discrepancy">₹{{ d.difference }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <h3>Grand Totals</h3>
-  <p><strong>Expected:</strong> ₹{{ grand_expected }}</p>
-  <p><strong>Actual:</strong> ₹{{ grand_actual }}</p>
-  <p><strong style="color: red;">Difference:</strong> ₹{{ grand_difference }}</p>
+  <div class="grand-total-section">
+    <h3>Grand Totals</h3>
+    <p><strong>Expected:</strong> ₹{{ grand_expected }}</p>
+    <p><strong>Actual:</strong> ₹{{ grand_actual }}</p>
+    <p class="difference"><strong>Difference:</strong> ₹{{ grand_difference }}</p>
+  </div>
 {% else %}
-  <p>No discrepancies found ✅</p>
+  <p class="no-discrepancies">No discrepancies found ✅</p>
 {% endif %}
 
 {% endblock %}

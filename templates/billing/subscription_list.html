@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
+<link rel="stylesheet" href="/static/css/subscription.css">
+
 <div class="container py-4">
 
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -33,8 +35,8 @@
 
   <!-- Subscription Table -->
   <div class="table-responsive">
-    <table class="table table-hover align-middle" style="border-radius:12px; overflow:hidden;">
-      <thead class="table-light" style="position:sticky; top:0; z-index:1;">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
         <tr>
           <th>Customer</th>
           <th>Phone</th>
@@ -90,7 +92,7 @@
 <!-- Subscription Form Modal -->
 <div class="modal fade" id="subModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content rounded-4 shadow-lg" style="background:#fafafa;">
+    <div class="modal-content rounded-4 shadow-lg">
       <div class="modal-header bg-dark text-white rounded-top-4">
         <h5 class="modal-title fw-bold" id="subModalLabel">Add Subscription</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -124,7 +126,7 @@
           </div>
           <div class="mb-3">
             <label class="form-label fw-medium">Select Poojas</label>
-            <div class="form-check" style="max-height: 200px; overflow-y: auto;">
+            <div class="form-check">
                 {% for p in poojas %}
                     {% if "(Yearly)" in p.pooja_name %}
                       <div class="mb-1">
@@ -197,81 +199,7 @@
   </div>
 </div>
 
-<style>
-/* Typography */
-h3, .modal-title {
-  font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-}
-label {
-  font-weight: 500;
-}
 
-/* Table */
-.table-hover tbody tr:hover {
-  background-color: #f8f9fa !important;
-}
-.table-light {
-  background: #f8f9fa !important;
-}
-.table-responsive {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
-/* Buttons */
-.btn-dark, .btn-outline-dark {
-  transition: all 0.3s ease;
-}
-.btn-dark:hover, .btn-outline-dark:hover {
-  background-color: #343a40;
-  color: #fff;
-}
-
-.btn-group .btn {
-  margin: 0 1px;
-}
-
-/* Modal */
-.modal-content {
-  border-radius: 16px !important;
-}
-
-/* Bill Styles */
-.bill-header {
-  text-align: center;
-  border-bottom: 2px solid #dee2e6;
-  padding-bottom: 15px;
-  margin-bottom: 20px;
-}
-
-.bill-details {
-  margin-bottom: 20px;
-}
-
-.bill-table {
-  margin-bottom: 20px;
-}
-
-.bill-total {
-  text-align: right;
-  border-top: 2px solid #dee2e6;
-  padding-top: 15px;
-}
-
-@media print {
-  .modal-header, .modal-footer {
-    display: none !important;
-  }
-  .modal-content {
-    border: none !important;
-    box-shadow: none !important;
-  }
-  .modal-body {
-    padding: 0 !important;
-  }
-}
-</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
@@ -463,47 +391,47 @@ document.addEventListener("DOMContentLoaded", function(){
         const { sub, selectedPoojas, cycles, totalBillAmount } = currentBillData;
 
         const billHtml = `
-        <div style="width:15.5cm; height:auto; border:1px solid #000; padding:5px;">
+        <div class="print-bill-container">
           <!-- Header -->
-          <div style="text-align:center; font-size:14px; font-weight:bold;">
-            <img src="/static/logo.png" alt="Ganapathi" style="height:40px;"><br>
-            <span style="font-size:16px;">തഴുതല ശ്രീ മഹാഗണപതി ക്ഷേത്രം</span><br>
-            <span style="font-size:12px;">Thazhuthala, Phone: 9496363989</span><br>
-            <span style="font-size:11px;">web: www.thazhuthalasreemahaganapathi.com</span><br>
-            <span style="font-size:11px;">e-mail: thazhuthalaganapathy@gmail.com</span>
+          <div class="bill-header-print">
+            <img src="/static/logo.png" alt="Ganapathi"><br>
+            <span>തഴുതല ശ്രീ മഹാഗണപതി ക്ഷേത്രം</span><br>
+            <span>Thazhuthala, Phone: 9496363989</span><br>
+            <span>web: www.thazhuthalasreemahaganapathi.com</span><br>
+            <span>e-mail: thazhuthalaganapathy@gmail.com</span>
           </div>
           <hr>
           <!-- Customer Info -->
-          <div style="font-size:12px; margin-bottom:6px;">
+          <div class="bill-info">
             <div>പേര് : <strong>${sub.customer.name}</strong></div>
             <div>നക്ഷത്രം : <strong>${sub.nakshathra}</strong></div>
             <div>തീയതി : <strong>${new Date().toLocaleDateString()}</strong></div>
           </div>
           <!-- Items Table -->
-          <table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:5px;">
+          <table class="bill-items-table">
             <thead>
               <tr>
-                <th style="border:1px solid black; padding:3px;">വഴിപാടു</th>
-                <th style="border:1px solid black; padding:3px;">അളവ്</th>
-                <th style="border:1px solid black; padding:3px;">തുക</th>
+                <th>വഴിപാടു</th>
+                <th>അളവ്</th>
+                <th>തുക</th>
               </tr>
             </thead>
             <tbody>
               ${selectedPoojas.map(p => `
                 <tr>
-                  <td style="border:1px solid black; padding:3px; text-align:left;">${p.pooja_name}</td>
-                  <td style="border:1px solid black; padding:3px;">${cycles}</td>
-                  <td style="border:1px solid black; padding:3px;">₹${(parseFloat(p.price) * cycles).toFixed(0)}</td>
+                  <td>${p.pooja_name}</td>
+                  <td>${cycles}</td>
+                  <td>₹${(parseFloat(p.price) * cycles).toFixed(0)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           <!-- Total -->
-          <div style="text-align:right; font-weight:bold; margin-top:5px; font-size:13px;">
+          <div class="bill-total-print">
             ആകെ തുക : ₹${totalBillAmount.toFixed(0)}
           </div>
           <!-- Secretary -->
-          <div style="margin-top:20px; text-align:right; font-size:12px;">
+          <div class="bill-signature">
             <span>സെക്രട്ടറി</span>
           </div>
         </div>
@@ -849,17 +777,5 @@ function formatDateTime(dateString) {
 }
 
 </script>
-
-
-<style>
-.disabled-cycle {
-  opacity: 0.5;
-  pointer-events: none;
-}
-.cycle-poojas {
-  background: #084785ff;
-}
-</style>
-
 
 {% endblock %}

@@ -1,0 +1,161 @@
+.discrepancy-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #0b3a8f;
+}
+
+.discrepancy-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.discrepancy-table th, .discrepancy-table td {
+  border: 1px solid #0b3a8f;
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.discrepancy-table th {
+  background: #eef3ff;
+  color: #0b3a8f;
+  font-weight: 700;
+}
+
+.discrepancy-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.discrepancy-diff {
+  color: #c51616;
+  font-weight: bold;
+}
+
+.discrepancy-subtitle {
+  margin-top: 2rem;
+  font-size: 1.3rem;
+  color: #0b3a8f;
+}
+
+@media (max-width: 768px) {
+  .discrepancy-title {
+    font-size: 1.3rem;
+  }
+  .discrepancy-table th, .discrepancy-table td {
+    padding: 6px 6px;
+    font-size: 0.95rem;
+  }
+}
+/* Discrepancy Report Table Styles */
+.discrepancy-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 20px 0;
+}
+
+.discrepancy-table,
+.discrepancy-table td,
+.discrepancy-table th {
+  border: 1px solid #ddd;
+}
+
+.discrepancy-table th,
+.discrepancy-table td {
+  padding: 5px;
+  text-align: left;
+}
+
+.discrepancy-table thead tr {
+  background: #f2f2f2;
+}
+
+.discrepancy-table tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.discrepancy-table tbody tr:hover {
+  background: #f0f0f0;
+}
+
+/* Pooja List Styles */
+.pooja-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.pooja-list li {
+  margin-bottom: 4px;
+}
+
+.pooja-list strong {
+  font-weight: 600;
+}
+
+/* Difference Column Styles */
+.difference-value {
+  font-weight: bold;
+  text-align: right;
+}
+
+.difference-value.discrepancy {
+  color: #d9534f;
+}
+
+.difference-value.no-discrepancy {
+  color: #5cb85c;
+}
+
+/* Report Header Styles */
+h2 {
+  margin-top: 20px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+h3 {
+  margin-top: 20px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.grand-total-section {
+  margin-top: 30px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-left: 4px solid #007bff;
+}
+
+.grand-total-section p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.grand-total-section .difference {
+  color: #d9534f;
+  font-weight: bold;
+}
+
+.no-discrepancies {
+  padding: 20px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  color: #155724;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .discrepancy-table {
+    font-size: 14px;
+  }
+  
+  .discrepancy-table th,
+  .discrepancy-table td {
+    padding: 3px;
+  }
+}
