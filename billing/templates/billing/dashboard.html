@@ -579,72 +579,74 @@ function printBill() {
 
 const familyBillBtn = document.getElementById("family-bill-btn");
 const familyModalEl = document.getElementById("familyBillModal");
-const familyModal = new bootstrap.Modal(familyModalEl);
 const familyContainer = document.getElementById("family-members-container");
 
-familyBillBtn.addEventListener("click", () => {
-  const familyModal = new bootstrap.Modal(document.getElementById("familyBillModal"));
-  familyModal.show();
-});
+document.addEventListener("DOMContentLoaded", function() {
+  const familyModal = new bootstrap.Modal(familyModalEl);
 
+  familyBillBtn.addEventListener("click", () => {
+    const familyModal = new bootstrap.Modal(document.getElementById("familyBillModal"));
+    familyModal.show();
+  });
 
-document.getElementById("generate-family-bill-btn").addEventListener("click", () => {
-  const members = [];
-  const names = document.querySelectorAll(".member-name");
-  const naks = document.querySelectorAll(".member-nakshathra");
+  document.getElementById("generate-family-bill-btn").addEventListener("click", () => {
+    const members = [];
+    const names = document.querySelectorAll(".member-name");
+    const naks = document.querySelectorAll(".member-nakshathra");
 
-  for (let i = 0; i < names.length; i++) {
-    const name = names[i].value.trim();
-    const nak = naks[i].value.trim();
-    if (name && nak) {
-      members.push({ name, nakshathra: nak });
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i].value.trim();
+      const nak = naks[i].value.trim();
+      if (name && nak) {
+        members.push({ name, nakshathra: nak });
+      }
     }
-  }
 
-  if (!members.length) {
-    alert("Please enter at least one member with Nakshathra.");
-    return;
-  }
+    if (!members.length) {
+      alert("Please enter at least one member with Nakshathra.");
+      return;
+    }
 
-  if (cart.length === 0) {
-    alert("Please select at least one pooja.");
-    return;
-  }
+    if (cart.length === 0) {
+      alert("Please select at least one pooja.");
+      return;
+    }
 
-const familyModalEl = document.getElementById("familyBillModal");
-const familyModalInstance = bootstrap.Modal.getInstance(familyModalEl);
-if(familyModalInstance) familyModalInstance.hide();
+    const familyModalEl = document.getElementById("familyBillModal");
+    const familyModalInstance = bootstrap.Modal.getInstance(familyModalEl);
+    if(familyModalInstance) familyModalInstance.hide();
 
-  const createdAt = new Date();
+    const createdAt = new Date();
 
-  fetch("{% url 'generate_family_bill' %}", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
-    body: JSON.stringify({
-      bill_no: makeBillNo(createdAt),
-      members: members,
-      cart: cart.map(p => ({ id: p.id, name: p.name, price: p.price, qty: p.qty }))
+    fetch("{% url 'generate_family_bill' %}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+      body: JSON.stringify({
+        bill_no: makeBillNo(createdAt),
+        members: members,
+        cart: cart.map(p => ({ id: p.id, name: p.name, price: p.price, qty: p.qty }))
+      })
     })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      currentBillId = data.bill_id;
-      currentBillIsFamily = true;
-      currentFamilyMembers = members;
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        currentBillId = data.bill_id;
+        currentBillIsFamily = true;
+        currentFamilyMembers = members;
 
-      const html = buildReceiptHTML({cust: members, nak:"", cart, createdAt, billId: currentBillId});
-      document.getElementById("bill-body").innerHTML = html;
+        const html = buildReceiptHTML({cust: members, nak:"", cart, createdAt, billId: currentBillId});
+        document.getElementById("bill-body").innerHTML = html;
 
-      const billModalInstance = new bootstrap.Modal(document.getElementById('billModal'));
-      billModalInstance.show();
-      names.forEach(input => input.value = "");
-      naks.forEach(select => select.value = "");
-    } else {
-      alert("Error saving family bill: " + data.error);
-    }
-  })
-  .catch(err => alert("AJAX Error: " + err));
+        const billModalInstance = new bootstrap.Modal(document.getElementById('billModal'));
+        billModalInstance.show();
+        names.forEach(input => input.value = "");
+        naks.forEach(select => select.value = "");
+      } else {
+        alert("Error saving family bill: " + data.error);
+      }
+    })
+    .catch(err => alert("AJAX Error: " + err));
+  });
 });
 
 

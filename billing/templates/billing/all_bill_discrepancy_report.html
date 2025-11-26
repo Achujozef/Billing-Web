@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
+
 <h2>All Bill Discrepancy Report</h2>
 
 {% if discrepancies %}
   <table border="1" cellpadding="5" cellspacing="0">
     <thead>
-      <tr style="background:#f2f2f2;">
+      <tr style="background: #f2f2f2;">
         <th>Bill ID</th>
         <th>Customer</th>
-        <th>Origin</th> <!-- ✅ new column -->
+        <th>Origin</th>
         <th>Poojas</th>
         <th>Expected Total</th>
         <th>Actual Total</th>
@@ -20,20 +21,17 @@
       <tr>
         <td>{{ d.bill.id }}</td>
         <td>{{ d.customer_name }}</td>
-        <td><strong>{{ d.bill_type }}</strong></td> <!-- ✅ shows origin -->
+        <td><strong>{{ d.bill_type }}</strong></td>
         <td>
-          <ul style="margin:0; padding-left:18px;">
+          <ul style="margin: 0; padding-left: 18px;">
             {% for p in d.poojas %}
-            
               <li><strong>#{{ p.bill_pooja_id }}</strong> — {{ p.name }} — ₹{{ p.price }} × {{ p.quantity }} = ₹{{ p.subtotal }}</li>
             {% endfor %}
           </ul>
         </td>
         <td>₹{{ d.expected_total }}</td>
         <td>₹{{ d.actual_total }}</td>
-        <td style="color:{% if d.difference != 0 %}red{% else %}green{% endif %}; font-weight:bold;">
-          ₹{{ d.difference }}
-        </td>
+        <td style="color: {% if d.difference != 0 %}red{% else %}green{% endif %}; font-weight: bold;">₹{{ d.difference }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -43,7 +41,7 @@
   <h3>Grand Totals</h3>
   <p><strong>Expected:</strong> ₹{{ grand_expected }}</p>
   <p><strong>Actual:</strong> ₹{{ grand_actual }}</p>
-  <p><strong style="color:red;">Difference:</strong> ₹{{ grand_difference }}</p>
+  <p><strong style="color: red;">Difference:</strong> ₹{{ grand_difference }}</p>
 {% else %}
   <p>No discrepancies found ✅</p>
 {% endif %}
