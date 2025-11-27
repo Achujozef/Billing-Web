@@ -43,7 +43,7 @@ async function savePooja() {
     return;
   }
 
-  fetch("{% url 'save_pooja' %}", {
+  fetch("/poojas/save/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
