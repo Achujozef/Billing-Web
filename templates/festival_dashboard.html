@@ -296,8 +296,8 @@
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content shadow-lg rounded-4 border-0">
       <form id="billForm" method="post" action="{% url 'create_festival_bill' %}" class="needs-validation" novalidate>
-        {% csrf_token %}
-        
+        {% csrf_token %}      
+
         <!-- Header -->
         <div class="modal-header bg-gradient bg-primary text-white rounded-top-4">
           <h5 class="modal-title fw-bold" id="addBillLabel">
@@ -307,7 +307,7 @@
         </div>
 
         <!-- Body -->
-        <div class="modal-body px-4 py-3">
+        <div class="modal-body px-4 py-3" style="max-height:500px; overflow-y:auto;">
           <!-- Event & Poojas -->
           <div class="row g-3">
             <div class="col-md-6">
