@@ -341,7 +341,7 @@
           <h6 class="fw-bold text-uppercase text-muted mb-3">Customer Information</h6>
           <div class="row g-3">
               <div class="col-md-6 position-relative">
-                <label for="cust-name" class="form-label fw-semibold">Name</label>
+                <label for="cust-name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
                 <input type="text" name="customer_name" id="cust-name" 
                       class="form-control shadow-sm malayalam-input" 
                       placeholder="Type in English for Malayalam">
@@ -358,7 +358,7 @@
             </div>
 
             <div class="col-12 position-relative">
-              <label for="address" class="form-label fw-semibold">Address</label>
+              <label for="address" class="form-label fw-semibold">Address <span class="text-danger">*</span></label>
               <textarea name="address" id="address" rows="2" 
                         class="form-control shadow-sm malayalam-input" 
                         placeholder="Full address"></textarea>
@@ -369,7 +369,7 @@
             </div>
 
             <div class="col-md-6">
-              <label for="nakshathra" class="form-label fw-semibold">Nakshathra</label>
+              <label for="nakshathra" class="form-label fw-semibold">Nakshathra <span class="text-danger">*</span></label>
               <select name="nakshathra" id="nakshathra" class="form-select shadow-sm">
                 <option value="">-- Select Nakshathra --</option>
                 {% for code, label in nakshathra_choices %}
