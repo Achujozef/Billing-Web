@@ -26,14 +26,22 @@ from django.utils.dateparse import parse_date
 # Local App Imports
 from .models import *
 from .forms import *
+
+# def show_error(request, message, status=500):
+#     return render(request, "error.html", {"error_message": message}, status=status)
+
 @login_required(login_url="login")
 def dashboard(request):
     try:
         poojas = Pooja.objects.all().order_by("id")  # ascending (oldest first)
         # For newest first: .order_by("-id")
+        # test = 1/0
+        # print("test",test)
+        
     except Exception as e:
         poojas = []
         print("Error fetching poojas:", e)
+        # return show_error(request, str(e))
 
     context = {
         "current_date": datetime.now().strftime("%d-%m-%Y"),
@@ -222,7 +230,7 @@ def save_pooja(request):
             pooja.save()
         else:  # Add
             pooja = Pooja.objects.create(pooja_name=name, price=price)
-        
+
         return JsonResponse({"success": True, "pooja": {"id": pooja.id, "pooja_name": pooja.pooja_name, "price": float(pooja.price)}})
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
@@ -234,8 +242,10 @@ def delete_pooja(request, pk):
         pooja = get_object_or_404(Pooja, id=pk)
         pooja.delete()
         return JsonResponse({"success": True})
+    
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
+
 
 
 
