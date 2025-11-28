@@ -1,3 +1,5 @@
+  let config = document.getElementById("config")
+  let csrf = config.dataset.csrf;
   let currentBillId = null;
   let currentBillIsFamily = false;
   let currentFamilyMembers = [];
@@ -198,7 +200,7 @@ function renderCart() {
       // ✅ Save immediately
       fetch("generate-bill/", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+        headers: { "Content-Type": "application/json", "X-CSRFToken": csrf},
         body: JSON.stringify({
           customer_name: cust,
           nakshathra: nak,
@@ -321,7 +323,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     fetch("generate-family-bill/", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-CSRFToken": "{{ csrf_token }}" },
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrf_token },
       body: JSON.stringify({
         bill_no: makeBillNo(createdAt),
         members: members,
