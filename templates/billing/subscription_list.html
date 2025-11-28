@@ -100,7 +100,8 @@
       <div class="modal-body">
         <form id="subForm">
           <div class="mb-3">
-            <label class="form-label fw-medium">Customer Name</label>
+            <label class="form-label fw-medium">Customer Name <span class="text-danger">*</span>
+</label>
             <input type="text" name="customer_name" class="form-control form-control-sm" required>
           </div>
           <div class="mb-3">
@@ -108,7 +109,8 @@
             <input type="text" name="customer_phone" class="form-control form-control-sm">
           </div>
           <div class="mb-3">
-            <label class="form-label fw-medium">Nakshathra</label>
+            <label class="form-label fw-medium">Nakshathra <span class="text-danger">*</span>
+</label>
             <select name="nakshathra" class="form-select form-select-sm" required>
               <option value="">Select Nakshathra</option>
               {% for nk, val in nakshathras.items %}
@@ -117,15 +119,18 @@
             </select>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-medium">Start Date</label>
+            <label class="form-label fw-medium">Start Date<span class="text-danger">*</span>
+</label>
             <input type="date" name="start_date" class="form-control form-control-sm" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-medium">End Date</label>
+            <label class="form-label fw-medium">End Date<span class="text-danger">*</span>
+</label>
             <input type="date" name="end_date" class="form-control form-control-sm" required>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-medium">Select Poojas</label>
+            <label class="form-label fw-medium">Select Poojas<span class="text-danger">*</span>
+</label>
             <div class="form-check">
                 {% for p in poojas %}
                     {% if "(Yearly)" in p.pooja_name %}
