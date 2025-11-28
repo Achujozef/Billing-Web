@@ -37,10 +37,16 @@
 <!-- Sidebar Footer -->
   <div class="sidebar-footer">
     <div class="d-flex flex-column gap-2 text-center">
-      <span class="navbar-text text-white">
-        👋 Welcome! Today: {{ current_date }} | Time: <span id="clock">{{ current_time }}</span>
+      <span class="text-white">
+        👋 Welcome!
       </span>
-      <a href="{% url 'logout' %}" class="btn btn-sm btn-danger w-100">🚪 Logout</a>
+      <span class="text-white">
+         Today: {{ current_date }}
+      </span>
+    <span class="text-white">
+      Time: <span id="clock">{{ current_time }}
+    </span>
+      <a href="{% url 'logout' %}" class="btn btn-sm btn-danger w-100 mt-3">🚪 Logout</a>
 
     <!-- Credit & Rights Section -->
       <small class="text-white mt-2 d-block">
