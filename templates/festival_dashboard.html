@@ -52,9 +52,13 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           {{ event.event_name }}
           <span>
-            <a href="#" class="me-2" onclick="showPasswordPrompt('editEvent', {{ event.id }})">Edit</a>
-            <button class="btn btn-link text-danger p-0" onclick="showPasswordPrompt('deleteEvent', {{ event.id }}, '{% url 'delete_event' event.id %}')">
-              Delete
+            <button class="btn btn-sm btn-outline-primary me-2"
+              onclick="showPasswordPrompt('editEvent', {{ event.id }})">
+            Edit
+            </button>
+            <button class="btn btn-sm btn-outline-danger"
+            onclick="showPasswordPrompt('deleteEvent', {{ event.id }}, '{% url 'delete_event' event.id %}')">
+            Delete
             </button>
           </span>
         </li>
@@ -95,8 +99,12 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           {{ pooja.pooja_name }} - ₹{{ pooja.price }}
           <span>
-            <a href="#" class="me-2" onclick="showPasswordPrompt('editPooja', {{ pooja.id }})">Edit</a>
-            <button class="btn btn-link text-danger p-0" onclick="showPasswordPrompt('deletePooja', {{ pooja.id }}, '{% url 'delete_festival_pooja' pooja.id %}')">
+            <button class="btn btn-sm btn-outline-primary me-2"
+              onclick="showPasswordPrompt('editPooja', {{ pooja.id }})">
+            Edit
+            </button>
+            {% comment %} <a href="#" class="me-2" onclick="showPasswordPrompt('editPooja', {{ pooja.id }})">Edit</a> {% endcomment %}
+            <button class="btn btn-sm btn-outline-danger" onclick="showPasswordPrompt('deletePooja', {{ pooja.id }}, '{% url 'delete_festival_pooja' pooja.id %}')">
               Delete
             </button>
           </span>
@@ -149,7 +157,6 @@
 </div>
 
   <!-- ================= Festival Bills Table ================= -->
-<!-- ================= Filter Bills ================= -->
 <div class="card mb-4 shadow-sm border-0">
   <div class="card-header">
     <h5>Filter Bills</h5>
