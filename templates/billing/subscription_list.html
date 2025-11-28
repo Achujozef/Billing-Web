@@ -12,7 +12,7 @@
   <!-- Filters -->
   <div class="row mb-3 align-items-end">
     <div class="col-md-4">
-      <label class="fw-medium">Filter by Nakshathra:</label>
+      <label class="fw-medium mb-1">Filter by Nakshathra:</label>
       <select id="nakshathra-filter" class="form-select">
         <option value="">All Nakshathras</option>
         {% for nk, val in nakshathras.items %}
@@ -21,7 +21,7 @@
       </select>
     </div>
     <div class="col-md-4">
-      <label class="fw-medium">Filter by Status:</label>
+      <label class="fw-medium mb-1">Filter by Status:</label>
       <select id="status-filter" class="form-select">
         <option value="">All Status</option>
         <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
