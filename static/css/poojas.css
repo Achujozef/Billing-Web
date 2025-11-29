@@ -5,7 +5,10 @@
   padding-right: 8px;        /* optional: avoid content touching scrollbar */
 }
 
+
 /* Optional: prevent row from exceeding container width */
 #pooja-grid {
   margin: 0;
 }
+.box_layout{border-radius:16px; background:#fafafa; transition: transform 0.3s, box-shadow 0.3s;}
+.modal_color{background:#ffffff}

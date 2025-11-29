@@ -1,7 +1,7 @@
 // Organization data - same as dashboard
 const ORG = {
   name_ml: "വെൺകുളം ശ്രീസരസ്വതി ക്ഷേത്രം",
-  place_ml: "സരസ്വതിപുരം..., ഇടവ",
+  place_ml: "സരസ്വതിപുരം, ഇടവ",
   phone: "9946538926",
   volume: "2025"
 };
