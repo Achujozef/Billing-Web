@@ -319,7 +319,7 @@ def subscription_list(request):
         sub.total_days = (sub.end_date - sub.start_date).days + 1
         total_pooja_amount = sum(float(p.price) for p in sub.poojas.all())
         cycles = max(1, sub.total_days / 28)
-        rounded_cycles = math.ceil(cycles)
+        rounded_cycles = math.floor(cycles)
         sub.total_bill_amount = round(total_pooja_amount * rounded_cycles, 2)
 
     # Prepare poojas JSON
