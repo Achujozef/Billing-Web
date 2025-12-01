@@ -158,3 +158,6 @@ input[type="date"].date-btn:focus {
     margin-top: 0;
   }
 }
+.print-area{position: sticky; top: 0; z-index: 1;}
+.background-color{background:#ffffff;}
+.model-body-height{max-height:500px; overflow-y:auto;}
