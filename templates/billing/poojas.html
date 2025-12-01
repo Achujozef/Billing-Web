@@ -14,7 +14,7 @@
     <div class="row g-3" id="pooja-grid">
       {% for pooja in poojas %}
       <div class="col-sm-6 col-md-4 col-lg-3">
-        <div class="card shadow-sm p-3 text-center h-100" style="border-radius:16px; background:#fafafa; transition: transform 0.3s, box-shadow 0.3s;">
+        <div class="card shadow-sm p-3 text-center h-100 box-layout" >
           <h5 class="fw-semibold text-dark">{{ pooja.pooja_name }}</h5>
           <p class="mb-3 text-muted">₹{{ pooja.price }}</p>
           <div class="d-flex justify-content-center gap-2">
@@ -34,7 +34,7 @@
 <!-- Pooja Modal -->
 <div class="modal fade" id="poojaModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content rounded-4 shadow-lg" style="background:#ffffff;">
+    <div class="modal-content rounded-4 shadow-lg modal-color">
       <div class="modal-header bg-dark text-white rounded-top-4">
         <h5 class="modal-title fw-bold" id="poojaModalLabel">Add Pooja</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

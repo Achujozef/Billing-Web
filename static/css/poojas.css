@@ -10,5 +10,5 @@
 #pooja-grid {
   margin: 0;
 }
-.box_layout{border-radius:16px; background:#fafafa; transition: transform 0.3s, box-shadow 0.3s;}
-.modal_color{background:#ffffff}
+.box-layout{border-radius:16px; background:#fafafa; transition: transform 0.3s, box-shadow 0.3s;}
+.modal-color{background:#ffffff}
