@@ -280,3 +280,19 @@
     max-height:500px; 
     overflow-y:auto;
   }
+
+.modal_body1{max-height:500px; overflow-y:auto;}
+
+.modal-width-hieght{max-width: 1200px; height: 90vh;}
+
+.pooja-card{background: #a23333; height: 140px; display: flex; flex-direction: column;}
+
+.pooja-qnty{width:18%; text-align:center;}
+.pooja-price{width:22%; text-align:right;}
+.font-14{font-size:14px;}
+.font-13{font-size:13px;}
+.font-18{font-size:18px}
+.font-19{font-size:19px;}
+.margin-top-5{margin-top:5px}
+.margin-top-3{margin-top:3px;}
+.total{display:flex; justify-content:space-between; font-size:15px; font-weight:700; margin-top:5px;}
