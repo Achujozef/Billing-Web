@@ -215,13 +215,20 @@ def save_pooja(request):
         price = data.get("price")
         if not name or price is None:
             return JsonResponse({"success": False, "error": "Missing fields"}, status=400)
+        existing_pooja = Pooja.objects.filter(pooja_name__iexact = name).exists()
         
         if pooja_id:  # Edit
             pooja = get_object_or_404(Pooja, id=pooja_id)
+            # Check if the new name already exists in another pooja
+            if existing_pooja and Pooja.objects.filter(pooja_name__iexact=name).exclude(id=pooja_id).exists():
+                return JsonResponse({"success": False, "error": f"Pooja with name '{name}' already exists!"}, status=400)
             pooja.pooja_name = name
             pooja.price = price
             pooja.save()
         else:  # Add
+            # Check if name already exists
+            if existing_pooja:
+                return JsonResponse({"success": False, "error": f"Pooja with name '{name}' already exists!"}, status=400)
             pooja = Pooja.objects.create(pooja_name=name, price=price)
 
         return JsonResponse({"success": True, "pooja": {"id": pooja.id, "pooja_name": pooja.pooja_name, "price": float(pooja.price)}})
