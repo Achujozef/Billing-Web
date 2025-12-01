@@ -27,9 +27,6 @@ from django.utils.dateparse import parse_date
 from .models import *
 from .forms import *
 
-# def show_error(request, message, status=500):
-#     return render(request, "error.html", {"error_message": message}, status=status)
-
 @login_required(login_url="login")
 def dashboard(request):
     try:
@@ -53,9 +50,6 @@ def dashboard(request):
     return render(request, "billing/dashboard.html", context)
 
 
-# ------------------------
-# API: Generate Bill (AJAX)
-# ------------------------
 @csrf_exempt
 def generate_bill(request):
     """Handles bill creation with quantities and price validation"""
@@ -73,7 +67,7 @@ def generate_bill(request):
         if not customer_name or not nakshathra or not cart:
             return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
 
-        # ✅ Ensure nakshathra is valid
+        #  Ensure nakshathra is valid
         if nakshathra not in dict(NAKSHATHRA_CHOICES):
             return JsonResponse({"success": False, "error": "Invalid Nakshathra"}, status=400)
 
@@ -120,7 +114,6 @@ def generate_bill(request):
 
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
 
 
 @csrf_exempt
@@ -245,9 +238,6 @@ def delete_pooja(request, pk):
     
     except Exception as e:
         return JsonResponse({"success": False, "error": str(e)}, status=500)
-
-
-
 
 
 def calculate_month_cycles(start_date, end_date):
@@ -636,8 +626,8 @@ def report_view(request):
             Pooja.objects.filter(billpooja__bill__in=bills_qs)
             .values("id", "pooja_name", "price")
             .annotate(
-                quantity=Sum("billpooja__quantity"),   # ✅ sum of quantities from BillPooja
-                total=Sum(F("price") * F("billpooja__quantity"))  # ✅ total = price × quantity
+                quantity=Sum("billpooja__quantity"),   #  sum of quantities from BillPooja
+                total=Sum(F("price") * F("billpooja__quantity"))  #  total = price × quantity
             )
             .order_by("pooja_name")
         )
