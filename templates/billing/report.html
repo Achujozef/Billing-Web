@@ -89,7 +89,7 @@
           <th>Nakshathra</th>
           <th>Date</th>
           <th>Total Amount</th>
-          <th>Actions</th>
+          <th class="no-print">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -113,7 +113,7 @@
           </td>
         <td>{{ bill.date }}</td>
         <td>₹{{ bill.total_amount }}</td>
-        <td>
+        <td class="no-print">
           {% if bill.is_cycle %}
             <span class="badge bg-secondary">Cycle</span>
           {% endif %}

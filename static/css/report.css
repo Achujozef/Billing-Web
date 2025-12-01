@@ -157,6 +157,9 @@ input[type="date"].date-btn:focus {
   .receipt-wrap {
     margin-top: 0;
   }
+  .no-print {
+    display: none;
+  }
 }
 .print-area{position: sticky; top: 0; z-index: 1;}
 .background-color{background:#ffffff;}
