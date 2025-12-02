@@ -375,7 +375,17 @@ def subscription_save(request):
                 subscription.start_date = start_date
                 subscription.end_date = end_date
                 subscription.save()
-                created_sub_id = subscription.id
+                
+                # Update poojas if provided
+                if pooja_ids:
+                    pooja_objs = Pooja.objects.filter(id__in=pooja_ids)
+                    subscription.poojas.set(pooja_objs)
+                
+                return JsonResponse({
+                    "success": True, 
+                    "subscription_id": subscription.id,
+                    "message": "Subscription updated successfully!"
+                })
             else:  # Create new subscription
                 subscription = Subscription.objects.create(
                     customer=customer,
@@ -385,48 +395,47 @@ def subscription_save(request):
                     is_active=True
                 )
                 created_sub_id = subscription.id
-            if not pooja_ids:
-                return JsonResponse({
-                "success": True, 
-                "subscription_id": created_sub_id,
-                "message": "Subscription saved successfully without poojas!"
-            })
-            # Update poojas
-            pooja_objs = Pooja.objects.filter(id__in=pooja_ids)
-            subscription.poojas.set(pooja_objs)
+                if not pooja_ids:
+                    return JsonResponse({
+                    "success": True, 
+                    "subscription_id": created_sub_id,
+                    "message": "Subscription saved successfully without poojas!"
+                })
+                # Update poojas
+                pooja_objs = Pooja.objects.filter(id__in=pooja_ids)
+                subscription.poojas.set(pooja_objs)
 
-           # --- Calculate cycles ---
-            cycles = calculate_month_cycles(start_date, end_date)  # helper function you already have
+               # --- Calculate cycles ---
+                cycles = calculate_month_cycles(start_date, end_date)
 
-            # --- Calculate total amount ---
-            total_pooja_amount = sum(float(p.price) for p in pooja_objs)
-            total_amount = total_pooja_amount * cycles
+                # --- Calculate total amount ---
+                total_pooja_amount = sum(float(p.price) for p in pooja_objs)
+                total_amount = total_pooja_amount * cycles
 
-            # --- Create Bill ---
-            bill = Bill.objects.create(
-                customer_name=customer_name,
-                nakshathra=nakshathra,
-                total_amount=total_amount
-            )
-
-            # --- Create BillPooja with quantity = cycles ---
-            for p in pooja_objs:
-                BillPooja.objects.create(
-                    bill=bill,
-                    pooja=p,
-                    quantity=cycles
+                # --- Create Bill ---
+                bill = Bill.objects.create(
+                    customer_name=customer_name,
+                    nakshathra=nakshathra,
+                    total_amount=total_amount
                 )
 
-            # --- Link Subscription ↔ Bill ---
-            SubscriptionBill.objects.create(subscription=subscription, bill=bill)
+                # --- Create BillPooja with quantity = cycles ---
+                for p in pooja_objs:
+                    BillPooja.objects.create(
+                        bill=bill,
+                        pooja=p,
+                        quantity=cycles
+                    )
 
+                # --- Link Subscription ↔ Bill ---
+                SubscriptionBill.objects.create(subscription=subscription, bill=bill)
 
-            return JsonResponse({
-                "success": True, 
-                "subscription_id": created_sub_id,
-                "bill_id": bill.id,
-                "message": "Subscription saved successfully!"
-            })
+                return JsonResponse({
+                    "success": True, 
+                    "subscription_id": created_sub_id,
+                    "bill_id": bill.id,
+                    "message": "Subscription saved successfully!"
+                })
 
         except Exception as e:
             return JsonResponse({"success": False, "error": f"Error saving subscription: {str(e)}"})
