@@ -144,6 +144,18 @@ input[type="date"].date-btn:focus {
   letter-spacing: 0.5px; 
 }
 
+/* Mobile scroll for report table */
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table {
+    min-width: 600px;
+  }
+}
+
 @media print {
   @page {
     size: A4;
