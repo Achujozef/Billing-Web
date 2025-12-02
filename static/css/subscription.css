@@ -156,6 +156,18 @@ label {
   font-size: 12px;
 }
 
+/* scroll for subscription table */
+@media (max-width: 768px) {
+  .table-responsive {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table {
+    min-width: 700px;
+  }
+}
+
 /* Print Media Query */
 @media print {
   .modal-header, .modal-footer {
