@@ -200,7 +200,7 @@ def generate_family_bill(request):
 @login_required(login_url="login")
 def pooja_list(request):
     poojas = Pooja.objects.all().order_by("id")
-    return render(request, "billing/poojas.html", {"poojas": poojas})
+    return render(request, "billing/poojas.html", {"poojas": poojas,"current_date": datetime.now().strftime("%d-%m-%Y"),})
 
 
 @csrf_exempt
@@ -337,6 +337,7 @@ def subscription_list(request):
         "selected_status": selected_status,
         "poojas": Pooja.objects.all(),
         "customers": Customer.objects.all(),
+        "current_date": datetime.now().strftime("%d-%m-%Y"),
     })
 @csrf_exempt
 def subscription_save(request):
@@ -634,6 +635,7 @@ def report_view(request):
             "end_date": end_date or "",
             "page_obj": page_obj,
             "view_mode": view_mode or "",
+            "current_date": datetime.now().strftime("%d-%m-%Y"),
         }
 
     # --- PRODUCT REPORT ---
@@ -851,6 +853,7 @@ def festival_dashboard(request):
         "festival_poojas": festival_poojas,
         "bills": bills,
         "nakshathra_choices": Bill._meta.get_field('nakshathra').choices,
+        "current_date": datetime.now().strftime("%d-%m-%Y"),
     })
 
 
