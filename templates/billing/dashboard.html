@@ -89,6 +89,7 @@
 <div class="col-md-6 d-flex">
   <div class="card p-4 flex-fill customer-card shadow-sm">
     <h5 class="mb-4 fw-bold text-secondary text-center">🧾 Customer & Bill</h5>
+    <button class="btn btn-lg w-100 rounded-4 mb-2 member-toggle-btn" id="memberMultiplication">Multiply(ON)</button>
   <div class="d-flex justify-content-between align-items-center mb-3">
 <button class="btn btn-warning btn-lg w-100 family-bill-btn shadow-sm rounded-4" id="family-bill-btn">
   👨‍👩‍👧‍👦 Enter Customer Details
@@ -256,13 +257,9 @@
     return `${yy}${mm}${dd}${hh}${ap}${mi}${ss}`;
   }
 
-function buildReceiptHTML({cust, nak, cart, createdAt, billId}) {
+function buildReceiptHTML({cust, nak, cart, createdAt, billId,total}) {
   const billNo = billId;
   const dateStr = createdAt.toLocaleDateString('en-GB'); // DD/MM/YYYY
-  let total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
-  if (Array.isArray(cust)) {
-    total = total * cust.length;  // multiply by number of members
-  }
 
   // Customers rows
   let customerRows = "";
@@ -379,6 +376,21 @@ function buildReceiptHTML({cust, nak, cart, createdAt, billId}) {
 //     document.getElementById("calc-total").innerText = total;
 //     calculateBalance();
 //   } {% endcomment %}
+let multiplyByMembers = true;
+const memberMultiplicationBtn = document.getElementById("memberMultiplication");
+memberMultiplicationBtn.addEventListener("click", function(){
+  multiplyByMembers = !multiplyByMembers;
+
+  if (multiplyByMembers){
+    memberMultiplicationBtn.classList.remove("off");
+    memberMultiplicationBtn.textContent = "Multiply(ON)";
+  }
+  else{
+    memberMultiplicationBtn.classList.add("off")
+    memberMultiplicationBtn.textContent = "Multiply(OFF)";
+  }
+  renderCart();
+});
 
 function renderCart() {
   let tbody = document.getElementById("selected-products");
@@ -399,9 +411,12 @@ function renderCart() {
       </tr>
     `;
   });
-
-  let memberCount = currentBillIsFamily ? currentFamilyMembers.length : 1;
-  total = total * memberCount;
+ 
+  // If multiply is ON, multiply by members
+  if (multiplyByMembers) {
+    let memberCount = currentBillIsFamily ? currentFamilyMembers.length : 1;
+    total = total * memberCount;
+  }
 
   document.getElementById("total").innerText = total;
   document.getElementById("calc-total").innerText = total;
@@ -555,7 +570,8 @@ document.addEventListener("DOMContentLoaded", function() {
       body: JSON.stringify({
         bill_no: makeBillNo(createdAt),
         members: members,
-        cart: cart.map(p => ({ id: p.id, name: p.name, price: p.price, qty: p.qty }))
+        cart: cart.map(p => ({ id: p.id, name: p.name, price: p.price, qty: p.qty })),
+        multiplyMembers: multiplyByMembers
       })
     })
     .then(r => r.json())
@@ -565,7 +581,7 @@ document.addEventListener("DOMContentLoaded", function() {
         currentBillIsFamily = true;
         currentFamilyMembers = members;
 
-        const html = buildReceiptHTML({cust: members, nak:"", cart, createdAt, billId: currentBillId});
+        const html = buildReceiptHTML({cust: members, nak:"", cart, createdAt, billId: currentBillId, total: data.total_amount});
         document.getElementById("bill-body").innerHTML = html;
 
         const billModalInstance = new bootstrap.Modal(document.getElementById('billModal'));

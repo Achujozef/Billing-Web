@@ -296,3 +296,14 @@
 .margin-top-5{margin-top:5px}
 .margin-top-3{margin-top:3px;}
 .total{display:flex; justify-content:space-between; font-size:15px; font-weight:700; margin-top:5px;}
+
+.member-toggle-btn{
+    background-color: #28a745;
+    color: white;
+    transition: 0.2s;
+}
+
+.member-toggle-btn.off{
+    background-color: #ad1121ff;
+    color: white;
+}

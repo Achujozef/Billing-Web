@@ -130,6 +130,7 @@ def generate_family_bill(request):
         bill_no = data.get("bill_no")
         cart = data.get("cart", [])  # list of poojas with qty
         members = data.get("members", [])  # list of family members: {name, nakshathra, customer_id(optional)}
+        multiplyMembers = data.get("multiplyMembers", True)
 
         if not cart or not members:
             return JsonResponse({"success": False, "error": "Cart and members are required"}, status=400)
@@ -160,7 +161,12 @@ def generate_family_bill(request):
                     pooja = Pooja.objects.get(id=pooja_id)
                 except Pooja.DoesNotExist:
                     continue
-                final_qty = qty * len(members)
+                
+                if multiplyMembers:
+                    final_qty = qty * len(members)
+                else:
+                    final_qty = qty
+                              
                 subtotal = pooja.price * qty
                 total_amount += subtotal
                 BillPooja.objects.create(bill=bill, pooja=pooja, quantity=final_qty)
@@ -183,11 +189,14 @@ def generate_family_bill(request):
                 )
 
             # update total_amount in Bill
-            final_total = total_amount * len(members)
+            if multiplyMembers:
+                final_total = total_amount * len(members)
+            else:
+                final_total = total_amount       
             bill.total_amount = final_total
             bill.save()
 
-        return JsonResponse({"success": True, "bill_id": bill.id})
+        return JsonResponse({"success": True, "bill_id": bill.id, "total_amount": float(final_total)})
 
     except json.JSONDecodeError:
         return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
