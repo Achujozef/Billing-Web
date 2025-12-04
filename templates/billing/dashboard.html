@@ -458,7 +458,7 @@ function renderCart() {
           currentBillId = data.bill_id;
 
           // ✅ Build bill HTML using backend bill_id
-          const html = buildReceiptHTML({cust, nak, cart, createdAt, billId: currentBillId});
+          const html = buildReceiptHTML({cust, nak, cart, createdAt, billId: currentBillId,total});
           document.getElementById("bill-body").innerHTML = html;
 
           // ✅ Show modal
@@ -478,7 +478,12 @@ function printBill() {
   }
 
   const createdAt = new Date();
-  const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+  let total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
+
+  if (multiplyByMembers) {
+    let memberCount = currentBillIsFamily ? currentFamilyMembers.length : 1;
+    total = total * memberCount;
+  }
 
   let cust, nak;
   if (currentBillIsFamily) {
@@ -489,7 +494,7 @@ function printBill() {
     nak  = document.getElementById("nakshathra").value.trim();
   }
 
-  const html = buildReceiptHTML({cust, nak, cart, createdAt, billId: currentBillId});
+  const html = buildReceiptHTML({cust, nak, cart, createdAt, billId: currentBillId,total});
 
   const w = window.open('', '', 'width=900,height=650');
   w.document.write(`
