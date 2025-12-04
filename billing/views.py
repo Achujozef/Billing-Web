@@ -271,7 +271,7 @@ def subscription_list(request):
     selected_nakshathra = request.GET.get("nakshathra", "")
     selected_status = request.GET.get("status", "")
     
-    subscriptions = Subscription.objects.all()
+    subscriptions = Subscription.objects.all().order_by("-id")
     
     if selected_nakshathra:
         subscriptions = subscriptions.filter(nakshathra=selected_nakshathra)
