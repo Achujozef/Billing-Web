@@ -382,11 +382,13 @@ memberMultiplicationBtn.addEventListener("click", function(){
   multiplyByMembers = !multiplyByMembers;
 
   if (multiplyByMembers){
+    memberMultiplicationBtn.classList.remove("btn-danger");
     memberMultiplicationBtn.classList.add("btn-success");
     memberMultiplicationBtn.textContent = "Multiply(ON)";
   }
   else{
-    memberMultiplicationBtn.classList.add("btn-danger")
+    memberMultiplicationBtn.classList.remove("btn-success");
+    memberMultiplicationBtn.classList.add("btn-danger");
     memberMultiplicationBtn.textContent = "Multiply(OFF)";
   }
   renderCart();
