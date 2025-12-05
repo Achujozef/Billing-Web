@@ -176,8 +176,10 @@ document.addEventListener("DOMContentLoaded", function(){
   // Print from modal (ensures same CSS used)
   const printBtn = document.getElementById("printBillBtn");
   printBtn && printBtn.addEventListener("click", function(){
-    const css = document.getElementById("receipt-style").innerHTML;
-    const html = document.getElementById("bill-body").innerHTML;
+    const billBodyEl = document.getElementById("bill-body");  
+    const receiptStyleEl = document.getElementById("receipt-style");
+    const css = receiptStyleEl ? receiptStyleEl.innerHTML : "";
+    const html = billBodyEl.innerHTML;
     // open print window
     const w = window.open('', '', 'width=900,height=650');
     w.document.write(`
@@ -185,6 +187,7 @@ document.addEventListener("DOMContentLoaded", function(){
         <head>
           <meta charset="utf-8">
           <title>Receipt</title>
+          <link rel="stylesheet" href="/static/css/dashboard.css">
           <style>${css}</style>
         </head>
         <body>${html}</body>
