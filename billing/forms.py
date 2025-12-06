@@ -25,3 +25,14 @@ class FestivalBillForm(forms.Form):
         choices=[("", "----")] + Bill._meta.get_field("nakshathra").choices
     )
     payment_status = forms.BooleanField(required=False, initial=True)
+    
+    bill_price = forms.DecimalField(
+        max_digits=10, 
+        decimal_places=None, 
+        required=True,
+        min_value=0,
+        widget=forms.NumberInput(attrs={
+            'step': '1',
+            'placeholder': ''
+        })
+    )
