@@ -558,6 +558,195 @@ def mark_cycle_done(request):
     return JsonResponse({"success": False, "error": "Invalid request"})
 
 
+# @login_required(login_url="login")
+# def report_view(request):
+#     filter_option = request.GET.get("filter")
+#     start_date = request.GET.get("start_date")
+#     end_date = request.GET.get("end_date")
+#     view_mode = request.GET.get("view")  
+#     page = int(request.GET.get("page", 1))
+#     report_type = request.GET.get("report", "bill")  # default bill
+#     search_query = request.GET.get("search", "").strip()               
+#     today = timezone.now().date()
+#     bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-id")
+
+#     if search_query:
+#         if search_query.isdigit():
+#             bills_qs = bills_qs.filter(id=search_query)
+#         else:
+#             # fallback if someone searches non-numeric, ignore
+#             bills_qs = bills_qs.none()
+
+#     # Filtering
+#     if filter_option:
+#         if filter_option == "today":
+#             bills_qs = bills_qs.filter(date=today)
+#         elif filter_option == "week":
+#             start_week = today - timedelta(days=today.weekday())
+#             bills_qs = bills_qs.filter(date__gte=start_week, date__lte=today)
+#         elif filter_option == "month":
+#             bills_qs = bills_qs.filter(date__year=today.year, date__month=today.month)
+#         elif filter_option == "year":
+#             bills_qs = bills_qs.filter(date__year=today.year)
+#         elif filter_option == "custom" and start_date and end_date:
+#             try:
+#                 start = datetime.strptime(start_date, "%Y-%m-%d").date()
+#                 end = datetime.strptime(end_date, "%Y-%m-%d").date()
+#                 bills_qs = bills_qs.filter(date__gte=start, date__lte=end)
+#             except ValueError:
+#                 pass
+
+#     # --- BILL REPORT ---
+#     if report_type == "bill":
+#         bills = bills_qs if view_mode == "all" else Paginator(bills_qs, 20).get_page(page).object_list
+#         page_obj = None if view_mode == "all" else Paginator(bills_qs, 20).get_page(page)
+
+#         # Preload family members to avoid N+1 queries
+#         bills = bills.prefetch_related("family_members__customer", "billpooja_set__pooja")
+
+#         total_bills = bills_qs.count()
+#         total_amount = bills_qs.aggregate(Sum("total_amount"))["total_amount__sum"] or 0
+#         total_poojas = sum(bill.poojas.count() for bill in bills_qs)
+
+#         # Prepare family members display
+#         for bill in bills:
+#             bill.is_family = bill.family_members.exists()
+#             family_list = []
+#             for member in bill.family_members.all():
+#                 if member.customer:
+#                     name = member.customer.name
+#                     nak = member.customer.nakshathra or member.nakshathra
+#                 else:
+#                     name = member.name
+#                     nak = member.nakshathra
+#                 family_list.append({"name": name, "nakshathra": nak})
+#             bill.family_data = family_list
+#             bill.family_display = ", ".join([f"{m['name']} ({m['nakshathra']})" for m in family_list]) if family_list else f"{bill.customer_name} ({bill.nakshathra})"
+
+#         context = {
+#             "report_type": "bill",
+#             "bills": bills,
+#             "total_bills": total_bills,
+#             "total_amount": total_amount,
+#             "total_poojas": total_poojas,
+#             "filter_option": filter_option or "",
+#             "start_date": start_date or "",
+#             "end_date": end_date or "",
+#             "page_obj": page_obj,
+#             "view_mode": view_mode or "",
+#             "current_date": datetime.now().strftime("%d-%m-%Y"),
+#         }
+
+    # --- PRODUCT REPORT ---
+    # else:
+    #     product_data = (
+    #         Pooja.objects.filter(billpooja__bill__in=bills_qs)
+    #         .values("id", "pooja_name", "price")
+    #         .annotate(
+    #             quantity=Sum("billpooja__quantity"),   #  sum of quantities from BillPooja
+    #             total=Sum(F("price") * F("billpooja__quantity"))  #  total = price × quantity
+    #         )
+    #         .order_by("pooja_name")
+    #     )
+
+    #     total_products = product_data.count()
+    #     total_quantity = sum(p["quantity"] or 0 for p in product_data)
+    #     total_amount = sum(p["total"] or 0 for p in product_data)
+
+    #     context = {
+    #         "report_type": "product",
+    #         "products": product_data,
+    #         "total_products": total_products,
+    #         "total_quantity": total_quantity,
+    #         "total_amount": total_amount,
+    #         "filter_option": filter_option or "",
+    #         "start_date": start_date or "",
+    #         "end_date": end_date or "",
+    #         "view_mode": view_mode or "",
+    #     }
+
+    # else:
+    #     from collections import defaultdict
+        
+    #     # Initialize dictionary to track pooja statistics
+    #     pooja_stats = defaultdict(lambda: {
+    #         'pooja_name': '',
+    #         'price': Decimal('0'),
+    #         'quantity': 0,
+    #         'total_amount': Decimal('0')
+    #     })
+        
+    #     # Process each bill in the filtered queryset
+    #     for bill in bills_qs.select_related().prefetch_related('billpooja_set__pooja'):
+    #         bill_poojas = bill.billpooja_set.all()
+            
+    #         if not bill_poojas:
+    #             continue
+            
+    #         # Calculate default total for this bill (what it WOULD have been)
+    #         default_total = sum(
+    #             bp.pooja.price * bp.quantity 
+    #             for bp in bill_poojas
+    #         )
+            
+    #         # Distribute the actual bill.total_amount proportionally
+    #         for bp in bill_poojas:
+    #             pooja_id = bp.pooja.id
+                
+    #             # Initialize pooja data if first encounter
+    #             if not pooja_stats[pooja_id]['pooja_name']:
+    #                 pooja_stats[pooja_id]['pooja_name'] = bp.pooja.pooja_name
+    #                 pooja_stats[pooja_id]['price'] = bp.pooja.price
+                
+    #             # Add quantity
+    #             pooja_stats[pooja_id]['quantity'] += bp.quantity
+                
+    #             # Calculate proportional share of the edited bill total
+    #             if default_total > 0:
+    #                 # This pooja's proportion of default total
+    #                 proportion = (bp.pooja.price * bp.quantity) / default_total
+    #                 # Apply proportion to actual bill total
+    #                 actual_amount = proportion * bill.total_amount
+    #             else:
+    #                 # Fallback: equal distribution
+    #                 actual_amount = bill.total_amount / bill_poojas.count()
+                
+    #             pooja_stats[pooja_id]['total_amount'] += actual_amount
+    
+    # # Convert to list format expected by template
+    # product_data = [
+    #     {
+    #         'id': pooja_id,
+    #         'pooja_name': stats['pooja_name'],
+    #         'price': float(stats['price']),
+    #         'quantity': stats['quantity'],
+    #         'total': float(round(stats['total_amount'], 2))
+    #     }
+    #     for pooja_id, stats in pooja_stats.items()
+    # ]
+    
+    # # Sort alphabetically by pooja name
+    # product_data.sort(key=lambda x: x['pooja_name'])
+    
+    # # Calculate totals
+    # total_products = len(product_data)
+    # total_quantity = sum(p['quantity'] for p in product_data)
+    # total_amount = sum(p['total'] for p in product_data)
+
+    # context = {
+    #     "report_type": "product",
+    #     "products": product_data,
+    #     "total_products": total_products,
+    #     "total_quantity": total_quantity,
+    #     "total_amount": round(total_amount, 2),
+    #     "filter_option": filter_option or "",
+    #     "start_date": start_date or "",
+    #     "end_date": end_date or "",
+    #     "view_mode": view_mode or "",
+    # }
+
+    # return render(request, "billing/report.html", context)
+
 @login_required(login_url="login")
 def report_view(request):
     filter_option = request.GET.get("filter")
@@ -566,15 +755,14 @@ def report_view(request):
     view_mode = request.GET.get("view")  
     page = int(request.GET.get("page", 1))
     report_type = request.GET.get("report", "bill")  # default bill
-    search_query = request.GET.get("search", "").strip()
+    search_query = request.GET.get("search", "").strip()               
     today = timezone.now().date()
     bills_qs = Bill.objects.prefetch_related("poojas").all().order_by("-id")
 
     if search_query:
-        if search_query.isdigit():  
+        if search_query.isdigit():
             bills_qs = bills_qs.filter(id=search_query)
         else:
-            # fallback if someone searches non-numeric, ignore
             bills_qs = bills_qs.none()
 
     # Filtering
@@ -596,7 +784,6 @@ def report_view(request):
             except ValueError:
                 pass
 
-    # --- BILL REPORT ---
     # --- BILL REPORT ---
     if report_type == "bill":
         bills = bills_qs if view_mode == "all" else Paginator(bills_qs, 20).get_page(page).object_list
@@ -639,36 +826,102 @@ def report_view(request):
         }
 
     # --- PRODUCT REPORT ---
-    else:
-        product_data = (
-            Pooja.objects.filter(billpooja__bill__in=bills_qs)
-            .values("id", "pooja_name", "price")
-            .annotate(
-                quantity=Sum("billpooja__quantity"),   #  sum of quantities from BillPooja
-                total=Sum(F("price") * F("billpooja__quantity"))  #  total = price × quantity
+    elif report_type == "product":  # ✅ Changed else to elif
+        from collections import defaultdict
+        
+        # Initialize dictionary to track pooja statistics
+        pooja_stats = defaultdict(lambda: {
+            'pooja_name': '',
+            'price': Decimal('0'),
+            'quantity': 0,
+            'total_amount': Decimal('0')
+        })
+        
+        # Process each bill in the filtered queryset
+        for bill in bills_qs.select_related().prefetch_related('billpooja_set__pooja'):
+            bill_poojas = bill.billpooja_set.all()
+            
+            if not bill_poojas:
+                continue
+            
+            # Calculate default total for this bill (what it WOULD have been)
+            default_total = sum(
+                bp.pooja.price * bp.quantity 
+                for bp in bill_poojas
             )
-            .order_by("pooja_name")
-        )
-
-        total_products = product_data.count()
-        total_quantity = sum(p["quantity"] or 0 for p in product_data)
-        total_amount = sum(p["total"] or 0 for p in product_data)
+            
+            # Distribute the actual bill.total_amount proportionally
+            for bp in bill_poojas:
+                pooja_id = bp.pooja.id
+                
+                # Initialize pooja data if first encounter
+                if not pooja_stats[pooja_id]['pooja_name']:
+                    pooja_stats[pooja_id]['pooja_name'] = bp.pooja.pooja_name
+                    pooja_stats[pooja_id]['price'] = bp.pooja.price
+                
+                # Add quantity
+                pooja_stats[pooja_id]['quantity'] += bp.quantity
+                
+                # Calculate proportional share of the edited bill total
+                if default_total > 0:
+                    # This pooja's proportion of default total
+                    proportion = (bp.pooja.price * bp.quantity) / default_total
+                    # Apply proportion to actual bill total
+                    actual_amount = proportion * bill.total_amount
+                else:
+                    # Fallback: equal distribution
+                    actual_amount = bill.total_amount / bill_poojas.count()
+                
+                pooja_stats[pooja_id]['total_amount'] += actual_amount
+        
+        # Convert to list format expected by template
+        product_data = [
+            {
+                'id': pooja_id,
+                'pooja_name': stats['pooja_name'],
+                'price': float(stats['price']),
+                'quantity': stats['quantity'],
+                'total': float(round(stats['total_amount'], 2))
+            }
+            for pooja_id, stats in pooja_stats.items()
+        ]
+        
+        # Sort alphabetically by pooja name
+        product_data.sort(key=lambda x: x['pooja_name'])
+        
+        # Calculate totals
+        total_products = len(product_data)
+        total_quantity = sum(p['quantity'] for p in product_data)
+        total_amount = sum(p['total'] for p in product_data)
 
         context = {
             "report_type": "product",
             "products": product_data,
             "total_products": total_products,
             "total_quantity": total_quantity,
-            "total_amount": total_amount,
+            "total_amount": round(total_amount, 2),
             "filter_option": filter_option or "",
             "start_date": start_date or "",
             "end_date": end_date or "",
             "view_mode": view_mode or "",
         }
+    
+    else:  # ✅ Added fallback for invalid report_type
+        context = {
+            "report_type": "bill",
+            "bills": [],
+            "total_bills": 0,
+            "total_amount": 0,
+            "total_poojas": 0,
+            "filter_option": filter_option or "",
+            "start_date": start_date or "",
+            "end_date": end_date or "",
+            "page_obj": None,
+            "view_mode": view_mode or "",
+            "current_date": datetime.now().strftime("%d-%m-%Y"),
+        }
 
     return render(request, "billing/report.html", context)
-
-
 
 def _normalize(s: str) -> str:
     # Malayalam is caseless, but casefold keeps behavior consistent across scripts.
@@ -812,9 +1065,9 @@ def logout_view(request):
 from django.http import JsonResponse
 
 def festival_dashboard(request):
-    events = Event.objects.all()
-    festival_poojas = Pooja.objects.filter(festival_pooja=True)
-    bills = Bill.objects.filter(event_bookings__isnull=False).distinct()
+    events = Event.objects.all().order_by("-id")
+    festival_poojas = Pooja.objects.filter(festival_pooja=True).order_by("-id")
+    bills = Bill.objects.filter(event_bookings__isnull=False).distinct().order_by("-id")
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         event_id = request.GET.get('event')
@@ -920,6 +1173,7 @@ def delete_festival_pooja(request, pk):
     messages.success(request, "Festival Pooja deleted successfully!")
     return redirect("festival_dashboard")
 
+
 def create_festival_bill(request):
     if request.method == "POST" and request.headers.get('x-requested-with') == 'XMLHttpRequest':
         form = FestivalBillForm(request.POST)
@@ -930,17 +1184,20 @@ def create_festival_bill(request):
                     phone_number=form.cleaned_data.get("phone_number"),
                     defaults={"address": form.cleaned_data.get("address")},
                 )
+                
+                
+                edited_price = form.cleaned_data.get("bill_price")
+                
                 bill = Bill.objects.create(
                     customer_name=customer.name,
                     nakshathra=form.cleaned_data["nakshathra"],
-                    total_amount=0,
+                    total_amount=edited_price, 
                     payment_status=form.cleaned_data.get("payment_status", False),
                 )
 
-                total = 0
+               
                 for pooja in form.cleaned_data["poojas"]:
                     BillPooja.objects.create(bill=bill, pooja=pooja, quantity=1)
-                    total += float(pooja.price)
 
                     EventBooking.objects.create(
                         event=form.cleaned_data["event"],
@@ -949,8 +1206,7 @@ def create_festival_bill(request):
                         customer=customer,
                     )
 
-                bill.total_amount = total
-                bill.save()
+                
 
                 return JsonResponse({
                     "success": True,
@@ -965,7 +1221,6 @@ def create_festival_bill(request):
                 }, status=500)
 
         else:
-            # Print form errors to console for debugging
             print("FORM VALIDATION ERROR:", form.errors.as_json())
             errors = form.errors.as_json()
             return JsonResponse({"success": False, "error": "Invalid form data", "details": errors}, status=400)
@@ -1137,6 +1392,3 @@ def all_bill_discrepancy_report(request):
     }
 
     return render(request, "billing/all_bill_discrepancy_report.html", context)
-
-
-

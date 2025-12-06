@@ -140,3 +140,19 @@
     margin-top: 0;
   }
 }
+
+.price-input {
+  font-weight: 600;
+  color: #059669;
+  font-size: 16px;
+}
+
+/* Price highlight animation */
+@keyframes priceUpdate {
+  0% { background: #d1fae5; }
+  100% { background: white; }
+}
+
+.price-updated {
+  animation: priceUpdate 0.6s ease;
+}

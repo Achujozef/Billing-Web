@@ -323,7 +323,7 @@
 
             <div class="col-md-6">
               <label for="poojaSelect" class="form-label fw-semibold">Poojas <span class="text-danger">*</span></label>
-              <select name="poojas" id="poojaSelect" class="form-select shadow-sm" multiple required>
+              <select name="poojas" id="poojaSelect" class="eventform-select shadow-sm" multiple required>
                 {% for pooja in festival_poojas %}
                   <option value="{{ pooja.id }}" data-price="{{ pooja.price }}">
                     {{ pooja.pooja_name }} (₹{{ pooja.price }})
@@ -340,7 +340,7 @@
           <!-- Customer Info -->
           <h6 class="fw-bold text-uppercase text-muted mb-3">Customer Information</h6>
           <div class="row g-3">
-              <div class="col-md-6 position-relative">
+              {% comment %} <div class="col-md-6 position-relative">
                 <label for="cust-name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
                 <input type="text" name="customer_name" id="cust-name" 
                       class="form-control shadow-sm malayalam-input" 
@@ -355,6 +355,41 @@
               <label for="phone-number" class="form-label fw-semibold">Phone</label>
               <input type="tel" name="phone_number" id="phone-number" maxlength="10" class="form-control shadow-sm" pattern="[0-9]{10}" placeholder="10-digit number">
               <div class="invalid-feedback">Enter a valid 10-digit phone number.</div>
+            </div> {% endcomment %}
+
+            <div class="col-md-6 position-relative">
+              <label for="cust-name" class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+              <input type="text" name="customer_name" id="cust-name" 
+                    class="form-control shadow-sm malayalam-input" 
+                    placeholder="Type in English for Malayalam">
+              <!-- Suggestion Box -->
+            <div id="customer_suggestions" 
+                  class="list-group position-absolute w-100 shadow-sm d-none"></div>
+            </div>
+
+            
+            <div class="col-md-6">
+              <label for="price-input" class="form-label fw-semibold">Price <span class="text-danger">*</span></label>
+              <input type="number" name="bill_price" id="price-input" 
+                    class="form-control shadow-sm price-input" 
+                    placeholder="" step="0.01" min="0" required>
+              <div class="invalid-feedback">Price is required.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label for="phone-number" class="form-label fw-semibold">Phone</label>
+              <input type="tel" name="phone_number" id="phone-number" maxlength="10" class="form-control shadow-sm" pattern="[0-9]{10}" placeholder="10-digit number">
+              <div class="invalid-feedback">Enter a valid 10-digit phone number.</div>
+          </div>
+
+           <div class="col-md-6">
+              <label for="nakshathra" class="form-label fw-semibold">Nakshathra <span class="text-danger">*</span></label>
+              <select name="nakshathra" id="nakshathra" class="form-select shadow-sm">
+                <option value="">-- Select Nakshathra --</option>
+                {% for code, label in nakshathra_choices %}
+                  <option value="{{ code }}">{{ label }}</option>
+                {% endfor %}
+              </select>
             </div>
 
             <div class="col-12 position-relative">
@@ -368,15 +403,7 @@
                   class="list-group position-absolute w-100 shadow-sm d-none"></div>
             </div>
 
-            <div class="col-md-6">
-              <label for="nakshathra" class="form-label fw-semibold">Nakshathra <span class="text-danger">*</span></label>
-              <select name="nakshathra" id="nakshathra" class="form-select shadow-sm">
-                <option value="">-- Select Nakshathra --</option>
-                {% for code, label in nakshathra_choices %}
-                  <option value="{{ code }}">{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
+           
 
             <div class="col-md-6 d-flex align-items-center">
               <div class="form-check">
@@ -588,7 +615,7 @@ const ORG = {
   volume: "2025"  // shown like your sample (Vol: 2025)
 };
 
-function updateCartFromSelection() {
+{% comment %} function updateCartFromSelection() {
     cart = []; // clear previous
     const poojaSelect = document.getElementById("poojaSelect");
     const selectedOptions = Array.from(poojaSelect.selectedOptions);
@@ -600,7 +627,34 @@ function updateCartFromSelection() {
             qty: 1 // default quantity 1, you can extend for custom qty
         });
     });
-}
+} {% endcomment %}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const poojaSelect = document.getElementById('poojaSelect');
+    const priceInput = document.getElementById('price-input');
+    
+    poojaSelect.addEventListener('change', function() {
+        const selectedOptions = Array.from(this.selectedOptions);
+        
+        if (selectedOptions.length > 0) {
+            // Calculate total price from all selected poojas
+            const totalPrice = selectedOptions.reduce((sum, option) => {
+                return sum + parseFloat(option.dataset.price || 0);
+            }, 0);
+            
+            // Update price input with animation
+            priceInput.value = totalPrice.toFixed(0);
+            priceInput.classList.add('price-updated');
+            
+            // Remove animation class after animation completes
+            setTimeout(() => {
+                priceInput.classList.remove('price-updated');
+            }, 600);
+        } else {
+            priceInput.value = '';
+        }
+    });
+});
 
 function makeBillNo(date) {
     // Example: BILL-20250922-1523
@@ -613,7 +667,7 @@ function makeBillNo(date) {
     return `BILL-${y}${m}${d}-${h}${min}${sec}`;
 }
 
-function buildReceiptHTML({cust, nak, address, cart, createdAt}) {
+{% comment %} function buildReceiptHTML({cust, nak, address, cart, createdAt}) {
   const billNo = makeBillNo(createdAt);
   const dateStr = createdAt.toLocaleDateString('en-GB');
   const total = cart.reduce((s,p)=>s + p.price*p.qty, 0);
@@ -657,7 +711,75 @@ function buildReceiptHTML({cust, nak, address, cart, createdAt}) {
           </thead>
           <tbody>${poojaRows}</tbody>
         </table>
-        <div class="total-row">ആകെ തുക : ₹${total.toFixed(2)}</div>
+        <div class="total-row">ആകെ തുക : ₹${editedPrice.toFixed(2)}</div>
+      </div>
+    </div>
+
+    <div class="sign">റീസിവർ- 9846076654</div>
+  </div>`;
+} {% endcomment %}
+
+function buildReceiptHTML({cust, nak, address, cart, createdAt}) {
+  const billNo = makeBillNo(createdAt);
+  const dateStr = createdAt.toLocaleDateString('en-GB');
+  
+  // ✅ Get the edited price from the input field
+  const editedPrice = parseFloat(document.getElementById('price-input').value) || 0;
+  
+  // ✅ Calculate proportional prices for each pooja
+  const totalBasePrice = cart.reduce((sum, p) => sum + p.price, 0);
+  
+  const poojaRows = cart.map(p => {
+    // ✅ Calculate this pooja's share of the edited price (proportional)
+    let poojaAmount;
+    if (totalBasePrice > 0) {
+      const proportion = p.price / totalBasePrice;
+      poojaAmount = editedPrice * proportion;
+    } else {
+      poojaAmount = editedPrice / cart.length;
+    }
+    
+    return `
+      <tr>
+        <td style="text-align:left;">${p.name}</td>
+        <td style="width:18%; text-align:center;">${p.qty}</td>
+        <td style="width:22%; text-align:right;">₹${poojaAmount.toFixed(2)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+  <div class="receipt-wrap">
+    <div class="receipt-title">${ORG.name_ml}</div>
+    <div class="receipt-sub">${ORG.place_ml}, ഫോൺ : ${ORG.phone}</div>
+    <div class="receipt-bar">
+      <div class="receipt-meta">Vol : ${ORG.volume}&nbsp;&nbsp;<span class="billno">${billNo}</span></div>
+      <div class="receipt-heading">രസീത്</div>
+      <div class="receipt-meta">തീയതി : ${dateStr}</div>
+    </div>
+
+    <div class="receipt-grid">
+      <div class="box">
+        <span class="label">പേര്</span>
+        <div>${cust}</div>
+      </div>
+      <div class="box">
+        <span class="label">നക്ഷത്രം</span>
+        <div>${nak}</div>
+      </div>
+      <div class="box" style="grid-column:1 / span 2;">
+        <span class="label">വിലാസം</span>
+        <div>${address}</div>
+      </div>
+      <div class="box" style="grid-column:1 / span 2;">
+        <span class="label">വഴിപാടു വിവരം</span>
+        <table class="items">
+          <thead>
+            <tr><th style="text-align:left;">വഴിപാടു</th><th style="width:18%;">അളവ്</th><th style="width:22%;">തുക</th></tr>
+          </thead>
+          <tbody>${poojaRows}</tbody>
+        </table>
+        <div class="total-row">ആകെ തുക : ₹${editedPrice.toFixed(2)}</div>
       </div>
     </div>
 
@@ -690,20 +812,30 @@ function generateAndPrint() {
     const cust = document.getElementById("cust-name").value.trim();
     const nak  = document.getElementById("nakshathra").value.trim();
     const address = document.getElementById("address").value.trim();
-    updateCartFromSelection()
-
-    if (!cust || !nak || !address || cart.length === 0) {
-        alert("Please fill all details and select products before printing.");
+    const priceInput = document.getElementById("price-input").value.trim(); // ✅ Get edited price
+    
+    // ✅ Build cart from selected poojas
+    const poojaSelect = document.getElementById('poojaSelect');
+    const selectedOptions = Array.from(poojaSelect.selectedOptions);
+    
+    if (!cust || !nak || !address || selectedOptions.length === 0 || !priceInput) {
+        alert("Please fill all required fields and select at least one pooja.");
         return;
     }
+
+    // ✅ Build cart array for receipt
+    cart = selectedOptions.map(opt => ({
+        id: opt.value,
+        name: opt.text.split(' (₹')[0],
+        price: parseFloat(opt.dataset.price),
+        qty: 1
+    }));
 
     // Prepare form data
     const form = document.getElementById('billForm');
     const formData = new FormData(form);
 
     // Add selected poojas to FormData manually
-    const poojaSelect = document.getElementById('poojaSelect');
-    const selectedOptions = Array.from(poojaSelect.selectedOptions);
     selectedOptions.forEach(opt => {
         formData.append('poojas', opt.value);
     });
@@ -715,7 +847,7 @@ function generateAndPrint() {
     fetch(form.action, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token }}', // Ensure CSRF token is set
+            'X-CSRFToken': '{{ csrf_token }}',
             'X-Requested-With': 'XMLHttpRequest'
         },
         body: formData
@@ -724,7 +856,10 @@ function generateAndPrint() {
     .then(data => {
         if (data.success) {
             // Backend saved successfully, now generate bill HTML for print
-            const createdAt = new Date(data.created_at); // you can return the bill timestamp from backend
+            const createdAt = new Date(data.created_at);
+            
+            // ✅ Use the EDITED price for total in receipt, not cart sum
+            const editedPrice = parseFloat(priceInput).toFixed(0);
             const html = buildReceiptHTML({cust, nak, address, cart, createdAt});
 
             const w = window.open('', '', 'width=900,height=650');
@@ -749,7 +884,7 @@ function generateAndPrint() {
             const addBillModal = bootstrap.Modal.getInstance(addBillModalEl);
             addBillModal.hide();
 
-            // Optionally, reload the table or page to show the new bill
+            // Reload to show the new bill
             location.reload();
         } else {
             alert(data.error || "Failed to save the bill.");
@@ -765,7 +900,7 @@ $(document).on("click", ".toggle-payment", function () {
     const billId = $(this).data("id");
     const action = $(this).data("action"); // mark_paid / mark_unpaid
     const row = $(this).closest("tr");
-    const amount = row.find("td:nth-child(4)").text().replace("₹", "").trim();
+    const amount = parseFloat(row.find("td:nth-child(4)").text().replace("₹", "").trim()).toFixed(0); 
 
     // Fill modal hidden fields
     $("#billId").val(billId);
