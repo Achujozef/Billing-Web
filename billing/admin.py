@@ -10,5 +10,4 @@ admin.site.register(BillPooja)
 admin.site.register([SubscriptionCycleHistory,EventBooking])
 admin.site.register(FamilyBillMember)
 admin.site.register(Event)
-admin.site.register(EventBooking)
-admin.site.register(FamilyBillMember)
+
