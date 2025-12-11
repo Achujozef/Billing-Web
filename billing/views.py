@@ -1085,8 +1085,9 @@ def logout_view(request):
 from django.http import JsonResponse
 
 def festival_dashboard(request):
-    events = Event.objects.all().order_by("-id")
-    festival_poojas = Pooja.objects.filter(festival_pooja=True).order_by("-id")
+    # Only include "new" events and "new" festival poojas
+    events = Event.objects.filter(new=True).order_by("-id")
+    festival_poojas = Pooja.objects.filter(festival_pooja=True, new=True).order_by("-id")
     bills = Bill.objects.filter(event_bookings__isnull=False).distinct().order_by("-id")
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -1118,7 +1119,6 @@ def festival_dashboard(request):
                 'poojas': pooja_list
             })
 
-
         return JsonResponse({'bills': data})
 
     return render(request, "festival_dashboard.html", {
@@ -1135,7 +1135,7 @@ def add_event(request):
     if request.method == "POST":
         name = request.POST.get("name")
         if name:
-            Event.objects.create(event_name=name)
+            Event.objects.create(event_name=name, new=True)
             messages.success(request, "Event added successfully!")
             return redirect("festival_dashboard")
     return JsonResponse({"error": "Invalid request"}, status=400)

@@ -13,6 +13,13 @@ class FestivalPoojaForm(forms.ModelForm):
         model = Pooja
         fields = ["pooja_name", "price"]
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.new = True  # Ensure 'new' is True when adding a new festival pooja
+        if commit:
+            instance.save()
+        return instance
+
 class FestivalBillForm(forms.Form):
     event = forms.ModelChoiceField(queryset=Event.objects.all())
     poojas = forms.ModelMultipleChoiceField(
