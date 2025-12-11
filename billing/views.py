@@ -843,7 +843,8 @@ def report_view(request):
             'pooja_name': '',
             'price': Decimal('0'),
             'quantity': 0,
-            'total_amount': Decimal('0')
+            'total_amount': Decimal('0'),
+            'is_new': False
         })
         
         # Process each bill in the filtered queryset
@@ -867,6 +868,7 @@ def report_view(request):
                 if not pooja_stats[pooja_id]['pooja_name']:
                     pooja_stats[pooja_id]['pooja_name'] = bp.pooja.pooja_name
                     pooja_stats[pooja_id]['price'] = bp.pooja.price
+                    pooja_stats[pooja_id]['is_new'] = bp.pooja.new
                 
                 # Add quantity
                 pooja_stats[pooja_id]['quantity'] += bp.quantity
@@ -890,7 +892,8 @@ def report_view(request):
                 'pooja_name': stats['pooja_name'],
                 'price': float(stats['price']),
                 'quantity': stats['quantity'],
-                'total': float(round(stats['total_amount'], 2))
+                'total': float(round(stats['total_amount'], 2)),
+                'is_new': stats['is_new']
             }
             for pooja_id, stats in pooja_stats.items()
         ]
