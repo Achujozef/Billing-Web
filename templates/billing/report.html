@@ -152,7 +152,7 @@
 
   data-poojas='[
     {% for bp in bill.billpooja_set.all %}
-      {"name":"{{ bp.pooja.pooja_name }}","price":"{{ bp.pooja.price }}","qty":"{{ bp.quantity }}"}
+      {"name":"{{ bp.pooja.pooja_name }}","price":"{{ bp.pooja.price }}","qty":"{{ bp.quantity }}","is_new":"{{ bp.pooja.new|yesno:'true,false' }}"}
       {% if not forloop.last %},{% endif %}
     {% endfor %}
   ]'

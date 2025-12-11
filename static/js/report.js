@@ -46,14 +46,30 @@ if (is_family && Array.isArray(family) && family.length > 0) {
 }
 
 
-  // Poojas
-  const poojaRows = (cart || []).map(p => `
-    <tr>
-      <td style="text-align:left;">${p.name} (₹${parseFloat(p.price||0).toFixed(2)})</td>
-      <td style="width:18%; text-align:center;">${p.qty}</td>
-      <td style="width:22%; text-align:right;">₹${(parseFloat(p.price||0)*p.qty).toFixed(2)}</td>
-    </tr>
-  `).join("");
+  // Poojas - check if any pooja has new=true (festival pooja)
+  const hasNewPooja = (cart || []).some(p => p.is_new === "true" || p.is_new === true);
+  
+  const poojaRows = (cart || []).map(p => {
+    if (hasNewPooja) {
+      // Festival bill: show only pooja name without price, dash for amount
+      return `
+        <tr>
+          <td style="text-align:left;">${p.name}</td>
+          <td style="width:18%; text-align:center;">${p.qty}</td>
+          <td style="width:22%; text-align:right;">-</td>
+        </tr>
+      `;
+    } else {
+      // Regular bill: show price in name and amount column
+      return `
+        <tr>
+          <td style="text-align:left;">${p.name} (₹${parseFloat(p.price||0).toFixed(2)})</td>
+          <td style="width:18%; text-align:center;">${p.qty}</td>
+          <td style="width:22%; text-align:right;">₹${(parseFloat(p.price||0)*p.qty).toFixed(2)}</td>
+        </tr>
+      `;
+    }
+  }).join("");
 
   return `
     <div class="receipt-wrap">
