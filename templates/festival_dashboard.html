@@ -259,8 +259,16 @@
             <h5 class="modal-title">Add Event</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-          <div class="modal-body">
-            <input type="text" name="name" class="form-control" placeholder="Event Name" required>
+          {% comment %} add malayalam transilation {% endcomment %}
+          <div class="modal-body position-relative">
+            <input type="text" name="name" id="event-name-input" 
+                  class="form-control" 
+                  placeholder="Event Name (Type in English)" required>
+
+            <div id="event_suggestions" 
+                class="list-group position-absolute w-100 shadow-sm d-none" 
+                style="z-index: 1050; max-height: 200px; overflow-y: auto;">
+            </div>
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-primary">Save</button>
@@ -281,7 +289,17 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <input type="text" name="pooja_name" class="form-control mb-2" placeholder="Pooja Name" required>
+            {% comment %} add malayalam transilation {% endcomment %}
+            <div class="position-relative mb-2">
+              <input type="text" name="pooja_name" id="pooja-name-input" 
+                    class="form-control" 
+                    placeholder="Pooja Name (Type in English)" required>
+
+              <div id="pooja_suggestions" 
+                  class="list-group position-absolute w-100 shadow-sm d-none" 
+                  style="z-index: 1050; max-height: 200px; overflow-y: auto;">
+              </div>
+            </div>
             <input type="number" step="0.01" name="price" class="form-control" placeholder="Price" required>
           </div>
           <div class="modal-footer">

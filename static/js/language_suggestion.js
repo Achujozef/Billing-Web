@@ -138,6 +138,11 @@ function attachManglishSuggestions(inputId, boxId) {
 attachManglishSuggestions("cust-name", "customer_suggestions");
 attachManglishSuggestions("address", "address_suggestions");
 
+//enable malayalam transilation
+
+attachManglishSuggestions("event-name-input", "event_suggestions");
+attachManglishSuggestions("pooja-name-input", "pooja_suggestions");
+
 // Keep your existing ones too
 attachManglishSuggestions("pooja-search", "product_suggestions");
 

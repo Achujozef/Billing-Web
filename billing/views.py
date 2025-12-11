@@ -1003,9 +1003,18 @@ def transliterate(request):
         sub_qs  = Subscription.objects.filter(startswith_q("customer__name")) \
                                       .order_by("customer__name") \
                                       .values_list("customer__name", flat=True)[:20]
+        
+        # add event and pooja queries
+
+        event_qs = Event.objects.filter(startswith_q("event_name")) \
+                                .order_by("event_name") \
+                                .values_list("event_name", flat=True)[:20]
+        pooja_qs = Pooja.objects.filter(startswith_q("pooja_name")) \
+                                .order_by("pooja_name") \
+                                .values_list("pooja_name", flat=True)[:20]
 
         # Keep DB order stable, dedupe while preserving order
-        db_candidates = list(dict.fromkeys(list(cust_qs) + list(bill_qs) + list(sub_qs)))
+        db_candidates = list(dict.fromkeys(list(cust_qs) + list(bill_qs) + list(sub_qs) + list(event_qs) + list(pooja_qs)))  #added event_qs and pooja_qs
 
         # ---- 3) Rank DB hits: exact > prefix ----
         s_norms = [_normalize(p) for p in prefixes]
@@ -1043,7 +1052,9 @@ def transliterate(request):
             cust = list(Customer.objects.filter(fallback_q).values_list("name", flat=True)[:10])
             bill = list(Bill.objects.filter(customer_name__istartswith=q_raw).values_list("customer_name", flat=True)[:10])
             sub  = list(Subscription.objects.filter(customer__name__istartswith=q_raw).values_list("customer__name", flat=True)[:10])
-            merged = list(dict.fromkeys(cust + bill + sub))[:10]
+            event = list(Event.objects.filter(event_name__istartswith=q_raw).values_list("event_name", flat=True)[:10])
+            pooja = list(Pooja.objects.filter(pooja_name__istartswith=q_raw).values_list("pooja_name", flat=True)[:10])
+            merged = list(dict.fromkeys(cust + bill + sub + event + pooja))[:10]
             return JsonResponse({"suggestions": merged, "fallback": True}, status=200)
         return JsonResponse({"suggestions": [], "error": str(e)}, status=502)
 
