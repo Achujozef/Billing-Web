@@ -737,8 +737,8 @@ function makeBillNo(date) {
   </div>`;
 } {% endcomment %}
 
-function buildReceiptHTML({cust, nak, address, cart, createdAt}) {
-  const billNo = makeBillNo(createdAt);
+function buildReceiptHTML({cust, nak, address, cart, createdAt, billId}) {
+  const billNo = billId || makeBillNo(createdAt); // Use real bill ID if available
   const dateStr = createdAt.toLocaleDateString('en-GB');
   
   // ✅ Get the edited price from the input field
@@ -878,7 +878,7 @@ function generateAndPrint() {
             
             // ✅ Use the EDITED price for total in receipt, not cart sum
             const editedPrice = parseFloat(priceInput).toFixed(0);
-            const html = buildReceiptHTML({cust, nak, address, cart, createdAt});
+            const html = buildReceiptHTML({cust, nak, address, cart, createdAt, billId: data.bill_id});
 
             const w = window.open('', '', 'width=900,height=650');
             w.document.write(`

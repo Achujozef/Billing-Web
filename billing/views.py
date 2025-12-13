@@ -1233,7 +1233,8 @@ def create_festival_bill(request):
 
                 return JsonResponse({
                     "success": True,
-                    "created_at": timezone.now().isoformat()
+                    "created_at": timezone.now().isoformat(),
+                    "bill_id": bill.id
                 })
 
             except Exception as e:
