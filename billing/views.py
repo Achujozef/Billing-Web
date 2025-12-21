@@ -30,10 +30,11 @@ from .forms import *
 @login_required(login_url="login")
 def dashboard(request):
     try:
-        poojas = Pooja.objects.all().order_by("id")  # ascending (oldest first)
-        # For newest first: .order_by("-id")
-        # test = 1/0
-        # print("test",test)
+        poojas = (
+            Pooja.objects
+            .filter(festival_pooja=False)   # ✅ exclude festival poojas
+            .order_by("id")
+        )
         
     except Exception as e:
         poojas = []
