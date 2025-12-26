@@ -46,7 +46,7 @@ def dashboard(request):
         "current_time": datetime.now().strftime("%H:%M:%S"),
         "poojas": poojas,
         "NAKSHATHRA_CHOICES": NAKSHATHRA_CHOICES,
-        "family_indices": list(range(8)),
+        "family_indices": list(range(5)),
     }
     return render(request, "billing/dashboard.html", context)
 
